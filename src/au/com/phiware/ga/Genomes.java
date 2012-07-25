@@ -11,7 +11,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UTFDataFormatException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -360,26 +362,35 @@ public final class Genomes {
 	/*
 	 * Returns null is specified filter does not define a public no-arg constructor or public constructor that accepts an OutputStream.
 	 */
-	public static <Filter extends FilterOutputStream> Filter getGenomeFilter(Container individual, Class<Filter> filter) throws IOException {
+	public static OutputStream[] getGenomeFilters(Container individual, Class<? extends FilterOutputStream>... filters) throws IOException {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		Filter filtered;
+		FilterOutputStream filtered = null;
+		List<OutputStream> filterList = new ArrayList<OutputStream>(filters.length + 2);
+		
 		try {
-			filtered = filter.getConstructor(OutputStream.class).newInstance(bytes);
-		} catch (Exception e) {
-			try {
-				bytes = null;
-				filtered = filter.getConstructor().newInstance();
-			} catch (Exception x) {
-				return null;
+			filterList.add(bytes);
+			for (Class<? extends FilterOutputStream> filter : filters) {
+				try {
+					filtered = filter.getConstructor(OutputStream.class).newInstance(filtered == null ? bytes : filtered);
+				} catch (Exception e) {
+					bytes = null;
+					filterList.clear();
+					filtered = filter.getConstructor().newInstance();
+				}
+				filterList.add(filtered);
 			}
+		} catch (Exception x) {
+			return null;
 		}
 		DataOutputStream out = new DataOutputStream(filtered);
+		filterList.add(out);
 		individual.writeGenome(out);
 		out.close();
 		byte[] rv = null;
 		if (bytes != null)
 			rv = bytes.toByteArray();
 		genomes.put(individual, rv);
-		return filtered;
+		OutputStream[] a = new OutputStream[filterList.size()];
+		return filterList.toArray(a);
 	}
 }

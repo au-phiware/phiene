@@ -2,14 +2,17 @@ package au.com.phiware.ga;
 
 import static org.junit.Assert.*;
 
+import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
-import java.util.Collections;
+import java.io.OutputStream;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import au.com.phiware.ga.Mutation.MutationOutputStream;
 
 public class MutationTest {
 	private class TestContainer implements Container {
@@ -38,13 +41,18 @@ public class MutationTest {
 		individual = null;
 	}
 
+	@SuppressWarnings({ "unchecked", "unused" })
 	@Test
-	public void test() throws IOException {
-		Mutation.MutationOutputStream mutator = Genomes.getGenomeFilter(individual, Mutation.MutationOutputStream.class);
+	public void testGetGenomeFilters() throws IOException {
+		OutputStream[] chain = Genomes.getGenomeFilters(individual, MutationOutputStream.class);
+		assertSame("Should return 3 OutputStream.", 3, chain.length);
+		ByteArrayOutputStream bytes = (ByteArrayOutputStream) chain[0];
+		Mutation.MutationOutputStream mutator = (MutationOutputStream) chain[1];
+		DataOutput data = (DataOutput) chain[2];
 		assertNotNull(mutator);
 		assertSame("Should mutate once for each byte.", 4, mutator.getMutationCount());
 		byte[] genome = Genomes.getGenomeBytes(individual);
-		assertArrayEquals("Should agree.", genome, mutator.toByteArray());
+		assertArrayEquals("Should agree.", genome, bytes.toByteArray());
 		for (byte b : genome)
 			assertSame("Should set a single bit.", 1, Integer.bitCount(b & 0xFF));
 		Genomes.setGenomeBytes(individual, genome);
@@ -52,8 +60,8 @@ public class MutationTest {
 	}
 
 	@Test
-	public void testTransform() throws IOException, EvolutionTransformException {
-		mutation.transform(Collections.singleton(individual));
+	public void testTransformer() throws Exception {
+		assertSame("Should return argument.", individual, mutation.transformer(individual).call());
 		assertNotSame("Should mutate.", 0, individual.data);
 	}
 

@@ -1260,10 +1260,11 @@ public class GenomesTest {
 		assertArrayEquals(invGenome, Genomes.getGenomeBytes(individual, InverterOutputStream.class));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testGetGenomeFilter() throws IOException {
 		individual.bytes = phenome;
-		assertNotNull(Genomes.getGenomeFilter(individual, InverterOutputStream.class));
+		assertNotNull(Genomes.getGenomeFilters(individual, InverterOutputStream.class));
 		assertArrayEquals(invGenome, Genomes.getGenomeBytes(individual));
 	}
 

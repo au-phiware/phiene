@@ -2,25 +2,44 @@ package au.com.phiware.ga;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
+import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
 public class Evolution<Individual extends Container> {
-	private Collection<Individual> population;
-	private Collection<Process> processes;
+	private Collection<Individual> population = new HashSet<Individual>();
+	private List<Process<? extends Container, ? extends Container>> processes = new ArrayList<Process<? extends Container, ? extends Container>>();
+
 	private int generationCount = 0;
 
 	public Evolution() {
-		this(null, null);
+		this(null, (Individual[]) null);
 	}
 	
-	public Evolution(Collection<Individual> population, Collection<Process> processes) {
-		this.population = population;
-		if (this.population == null)
-			this.population = new HashSet<Individual>();
+	public Evolution(Individual... population) {
+		this(null, population);
+	}
+
+	public Evolution(Process<? super Individual, ? extends Container> firstProcess) {
+		this(firstProcess, (Individual[]) null);
+	}
+	
+	public Evolution(
+			Process<? super Individual, ? extends Container> firstProcess,
+			Individual... population) {
+		if (population != null)
+			Collections.addAll(this.population, population);
 		
-		this.processes = processes;
-		if (this.processes == null)
-			this.processes = new ArrayList<Process>();
+		if (firstProcess != null)
+			processes.add(firstProcess);
 	}
 
 	/**
@@ -32,28 +51,146 @@ public class Evolution<Individual extends Container> {
 
 	/**
 	 * @param <I>
-	 * @param population the population to set
+	 * @param member to add to the population
 	 */
-	public boolean addIndividual(Individual member) {
+	public boolean addToPopulation(Individual member) {
 		return this.population.add(member);
 	}
 	
 	/**
 	 * @return the processes
 	 */
-	public Collection<Process> getProcesses() {
+	public List<Process<? extends Container, ? extends Container>> getProcesses() {
 		return processes;
 	}
 	/**
-	 * @param processes the processes to set
+	 * @param process to set as the first of this evolution.
 	 */
-	public void addProcess(Process process) {
+	public void setFirstProcess(Process<? super Individual, ? extends Container> process) {
+		if (!processes.isEmpty())
+			throw new IllegalStateException("First process already set.");
 		this.processes.add(process);
 	}
+	/**
+	 * Adds the specified processes to the end of this evolution <em>in reverse order</em>.
+	 * 
+	 * @param reverseOrderedProcesses - processes to add to end of this evolution <em>in reverse order</em>.
+	 * @param lastProcess to add to end of this evolution.
+	 * @throws ClassCastException if the Post type of any process can not be cast to the Ante type of the following process.
+	 */
+	public void appendProcess(Process<? extends Container, ? extends Individual> lastProcess,
+			Process<? extends Container, ? extends Container>...reverseOrderedProcesses) {
+		if (processes.isEmpty())
+			throw new IllegalStateException("Process list is empty, use setFirstProcess.");
+
+		int priorSize = processes.size();
+		
+		try {
+			Class<?> anteType, postType = Process.actualPostType(processes.get(priorSize - 1));
+			if (reverseOrderedProcesses != null)
+			for(int i = reverseOrderedProcesses.length; i > 0;) {
+				Process<? extends Container, ? extends Container> process = reverseOrderedProcesses[--i];
+				
+				anteType = Process.actualAnteType(process);
+				if (!anteType.isAssignableFrom(postType))
+					throw new ClassCastException(postType.getName()+" cannot be cast to "+anteType.getName());
+				postType = Process.actualPostType(process);
+
+				processes.add(process);
+			}
+			anteType = Process.actualAnteType(lastProcess);
+			if (!anteType.isAssignableFrom(postType))
+				throw new ClassCastException(postType.getName()+" cannot be cast to "+anteType.getName());
+			processes.add(lastProcess);
+		} catch(RuntimeException e) {
+			while (processes.size() > priorSize)
+				processes.remove(priorSize);
+			throw e;
+		}
+	}
+	/**
+	 * Adds the specified process to the end of this evolution.
+	 * 
+	 * @param process to add to end of this evolution.
+	 */
+	public void appendProcess(Process<? extends Container, ? extends Individual> process) {
+		this.appendProcess(process, (Process<? extends Container, ? extends Container>[]) null);
+	}
 	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void evolve() throws EvolutionTransformException {
-		for (Process process : processes)
-			population = process.transform(population);
+		if (population.isEmpty()) return;
+		
+		final Collection<Individual> pop = population;
+		final CloseableBlockingQueue<? super Individual> feeder;
+		final CloseableBlockingQueue<? extends Individual> eater;
+		Future feedResult;
+		CloseableBlockingQueue in;
+		ExecutorService executor = Executors.newCachedThreadPool();
+		List<Future> future = new ArrayList<Future>();
+		int bufferSize = population.size() / 2 + 1;
+
+		/* Begin feeding the queue that will become the input of the first process. */
+		feeder = in = new ArrayCloseableBlockingQueue(bufferSize);
+		feedResult = executor.submit(new Runnable() {
+			public void run() {
+				try {
+					for (Individual i : pop)
+						feeder.put(i);
+				}
+				catch (InterruptedException earlyExit) {}
+				finally {
+					feeder.close();
+				}
+			}
+		});
+		
+		/* Chain the processes together and begin executing them. */
+		for (final Process process : processes) {
+			final CloseableBlockingQueue safeIn = in;
+			final CloseableBlockingQueue safeOut = new ArrayCloseableBlockingQueue<Container>(bufferSize);
+			future.add(executor.submit(new Runnable() {
+				public void run() {
+					process.transformPopulation(safeIn, safeOut);
+				}
+			}));
+			in = safeOut;
+		}
+		eater = in;
+		
+		try {
+			/* Gobble up the new population, after the feeder is closed. */
+			feedResult.get();
+			population.clear();
+			future.add(executor.submit(new Runnable() {
+				public void run() {
+					try {
+						Individual individual = eater.take();
+						population.add(individual);
+					} catch (InterruptedException earlyExit) {}
+				}
+			}));
+
+			/* Block until all processes are finished, throw any exceptions encountered. */ 
+			for (Future result : future)
+				result.get();
+		} catch (InterruptedException earlyExit) {
+			executor.shutdown();
+			try {
+				// Use generous time out, since a second interrupt may kill it
+				executor.awaitTermination(2, TimeUnit.MINUTES);
+			} catch (InterruptedException impatient) {}
+			if (!executor.isTerminated())
+				executor.shutdownNow();
+		} catch (ExecutionException e) {
+			executor.shutdownNow();
+			if (e.getCause() instanceof RuntimeException)
+				throw (RuntimeException) e.getCause();
+			else
+				//TODO WTF
+				throw new RuntimeException(e);
+		}
+
 		++generationCount;
 	}
 	public void evolve(int generationCount) throws EvolutionTransformException {

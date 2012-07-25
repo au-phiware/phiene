@@ -4,27 +4,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
 import java.util.Random;
 
-public class Mutation extends Variation {
+public class Mutation extends Variation<Container, Container> {
 	private static double mutationFrequency = 0.0001;
 	
 	static class MutationOutputStream extends FilterOutputStream {
 		private Random random = new Random();
-		private ByteArrayOutputStream bytes;
 		private int mutationCount;
 		
 		public MutationOutputStream(OutputStream out) {
 			super(out);
-			if (this.out == null)
-				this.out = this.bytes = new ByteArrayOutputStream();
-			else {
-				if (this.out instanceof ByteArrayOutputStream)
-					this.bytes = (ByteArrayOutputStream) this.out;
-				else
-					this.bytes = new ByteArrayOutputStream();
-			}
 		}
 		
 		/**
@@ -34,13 +24,6 @@ public class Mutation extends Variation {
 			return mutationCount;
 		}
 
-		/**
-		 * @return the bytes
-		 */
-		public byte[] toByteArray() {
-			return bytes.toByteArray();
-		}
-
 		@Override
 		public void write(int b) throws IOException {
 			if (random.nextDouble() < getMutationFrequency()) {
@@ -48,8 +31,6 @@ public class Mutation extends Variation {
 				++mutationCount;
 			}
 			out.write(b);
-			if (bytes != out)
-				bytes.write(b);
 		}
 	}
 	
@@ -62,20 +43,18 @@ public class Mutation extends Variation {
 	}
 
 	@Override
-	public <Individual extends Container> Collection<Individual> transform(
-			Collection<Individual> population)
-			throws EvolutionTransformException {
-		
-		for (Individual individual : population) {
-			try {
-				MutationOutputStream mutator = Genomes.getGenomeFilter(individual, MutationOutputStream.class);
-				if (mutator.getMutationCount() > 0)
-					Genomes.setGenomeBytes(individual, mutator.toByteArray());
-			} catch (IOException e) {
-				throw new EvolutionTransformException(e);
-			}
+	public Container transform(Container individual) {
+		try {
+			@SuppressWarnings("unchecked")
+			OutputStream[] chain = Genomes.getGenomeFilters(individual, MutationOutputStream.class);
+			ByteArrayOutputStream bytes = (ByteArrayOutputStream) chain[0];
+			MutationOutputStream mutator = (MutationOutputStream) chain[1];
+			
+			if (mutator.getMutationCount() > 0)
+				Genomes.setGenomeBytes(individual, bytes.toByteArray());
+		} catch (IOException e) {
+			throw new EvolutionTransformException(e);
 		}
-		
-		return population;
+		return individual;
 	}
 }
