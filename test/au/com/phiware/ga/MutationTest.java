@@ -12,7 +12,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import au.com.phiware.ga.Mutation.MutationOutputStream;
+import au.com.phiware.ga.MutationOutputStream;
 
 public class MutationTest {
 	private class TestContainer implements Container {
@@ -29,15 +29,12 @@ public class MutationTest {
 		}
 	}
 
-	private Mutation mutation;
 	private TestContainer individual;
 	@Before public void setUp() {
-		Mutation.setMutationFrequency(1.0);
-		mutation = new Mutation();
+		MutationOutputStream.defaultMutationFrequency = 1.0;
 		individual = new TestContainer();
 	}
 	@After public void tearDown() {
-		mutation = null;
 		individual = null;
 	}
 
@@ -47,11 +44,11 @@ public class MutationTest {
 		OutputStream[] chain = Genomes.getGenomeFilters(individual, MutationOutputStream.class);
 		assertSame("Should return 3 OutputStream.", 3, chain.length);
 		ByteArrayOutputStream bytes = (ByteArrayOutputStream) chain[0];
-		Mutation.MutationOutputStream mutator = (MutationOutputStream) chain[1];
+		MutationOutputStream mutator = (MutationOutputStream) chain[1];
 		DataOutput data = (DataOutput) chain[2];
 		assertNotNull(mutator);
-		assertSame("Should mutate once for each byte.", 4, mutator.getMutationCount());
 		byte[] genome = Genomes.getGenomeBytes(individual);
+		assertSame("Should mutate once for each byte.", 4, mutator.getMutationCount());
 		assertArrayEquals("Should agree.", genome, bytes.toByteArray());
 		for (byte b : genome)
 			assertSame("Should set a single bit.", 1, Integer.bitCount(b & 0xFF));
@@ -61,6 +58,23 @@ public class MutationTest {
 
 	@Test
 	public void testTransformer() throws Exception {
+		Variation<Container, Container> mutation = new Variation<Container, Container>(){
+			@Override
+			public Container transform(Container individual) {
+				try {
+					@SuppressWarnings("unchecked")
+					OutputStream[] chain = Genomes.getGenomeFilters(individual, MutationOutputStream.class);
+					ByteArrayOutputStream bytes = (ByteArrayOutputStream) chain[0];
+					MutationOutputStream mutator = (MutationOutputStream) chain[1];
+					
+					if (mutator.getMutationCount() > 0)
+						Genomes.setGenomeBytes(individual, bytes.toByteArray());
+				} catch (IOException e) {
+					throw new EvolutionTransformException(e);
+				}
+				return individual;
+			}
+		};
 		assertSame("Should return argument.", individual, mutation.transformer(individual).call());
 		assertNotSame("Should mutate.", 0, individual.data);
 	}
