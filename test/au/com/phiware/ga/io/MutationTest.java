@@ -1,4 +1,4 @@
-package au.com.phiware.ga;
+package au.com.phiware.ga.io;
 
 import static org.junit.Assert.*;
 
@@ -12,7 +12,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import au.com.phiware.ga.MutationOutputStream;
+import au.com.phiware.ga.*;
 
 public class MutationTest {
 	private class TestContainer implements Container {

@@ -1,4 +1,4 @@
-package au.com.phiware.ga;
+package au.com.phiware.ga.io;
 
 import java.io.FilterOutputStream;
 import java.io.IOException;
