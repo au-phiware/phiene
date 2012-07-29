@@ -22,28 +22,33 @@ import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
 public abstract class Process<Ante extends Container, Post extends Container> {
+	private class Repeatable implements Callable<Post> {
+		private Ante individual;
+		
+		public Repeatable(Ante individual) {
+			this.individual = individual;
+		}
+		
+		public Post call() {
+			try {
+				return transform(individual);
+			} catch (RuntimeException e) {
+				throw e;
+			} catch (Exception e) {
+				throw new EvolutionTransformException(e);
+			}
+		}
+		
+		public int repeatCount() {
+			return getRepeatCount(individual);
+		}
+	}
 	
 	public abstract Post transform(Ante individual);
 
-	public Callable<Post> transformer(final Ante individual) {
-		try {
-			final Process<Ante, Post> me = this;
-			return new Callable<Post>() {
-				public Post call() {
-					try {
-						return me.transform(individual);
-					} catch (RuntimeException e) {
-						throw e;
-					} catch (Exception e) {
-						throw new EvolutionTransformException(e);
-					}
-				}
-			};
-		} catch (RuntimeException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new EvolutionTransformException(e);
-		}
+	public <Individual extends Ante> Callable<Post> transformer(CloseableBlockingQueue<Individual> in)
+			throws InterruptedException {
+		return new Repeatable(in.take());
 	}
 
 	public void transformPopulation(
@@ -52,17 +57,20 @@ public abstract class Process<Ante extends Container, Post extends Container> {
 					throws EvolutionTransformException {
 		ExecutorService executor = Executors.newCachedThreadPool();
 		List<Future<Post>> results = new LinkedList<Future<Post>>();
+		boolean repeat = isTransformRepeated();
 		
 		try {
 			try {
 				for (;;) {
-					final Ante individual = in.take();
-					Callable<Post> transformer = transformer(individual);
+					Callable<Post> transformer = transformer(in);
 					
 					if (transformer == null)
-						throw new UnsupportedOperationException("No transformer");
+						throw new UnsupportedOperationException("Transformer expected");
 					
 					results.add(executor.submit(transformer));
+					if (repeat && transformer instanceof Process.Repeatable)
+						for (int i = ((Repeatable) transformer).repeatCount(); i > 0; i--)
+							results.add(executor.submit(transformer));
 				}
 			} catch (QueueClosedException good) {}
 
@@ -112,6 +120,26 @@ public abstract class Process<Ante extends Container, Post extends Container> {
 		}
 	}
 	
+	/**
+	 * Returns the number of times that this process' transform should be repeated for the specified individual.
+	 * This implementation returns zero, meaning the transform will be executed once per individual.
+	 * This method is only called when {@link #isTransformRepeated()} returns <tt>true</tt>.
+	 * @param individual with which the this process' transform method will called.
+	 * @return transform repeat count for specified individual.
+	 */
+	public int getRepeatCount(Ante individual) {
+		return 0;
+	}
+
+	/**
+	 * Returns <tt>true</tt> when this process produces more than one post-individual for each ante-individual, <tt>false</tt> otherwise.
+	 * This implementation returns <tt>false</tt>.
+	 * @return <tt>true</tt> when this process produces more than one post-individual for each ante-individual, <tt>false</tt> otherwise.
+	 */
+	public boolean isTransformRepeated() {
+		return false;
+	}
+
 	static Class<?> actualPostType(
 			Process<? extends Container, ? extends Container> process) {
 		return actualProcessType(1, process);

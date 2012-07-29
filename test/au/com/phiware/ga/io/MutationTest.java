@@ -13,6 +13,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import au.com.phiware.ga.*;
+import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 
 public class MutationTest {
 	private class TestContainer implements Container {
@@ -58,6 +59,10 @@ public class MutationTest {
 
 	@Test
 	public void testTransformer() throws Exception {
+		ArrayCloseableBlockingQueue<TestContainer> in = new ArrayCloseableBlockingQueue<TestContainer>(1);
+		in.add(individual);
+		in.close();
+
 		Variation<Container, Container> mutation = new Variation<Container, Container>(){
 			@Override
 			public Container transform(Container individual) {
@@ -75,7 +80,7 @@ public class MutationTest {
 				return individual;
 			}
 		};
-		assertSame("Should return argument.", individual, mutation.transformer(individual).call());
+		assertSame("Should return argument.", individual, mutation.transformer(in).call());
 		assertNotSame("Should mutate.", 0, individual.data);
 	}
 

@@ -16,6 +16,7 @@ import java.util.concurrent.Future;
 import org.junit.*;
 import static org.hamcrest.core.Is.is;
 import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
+import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
 public class ProcessTest {
@@ -50,10 +51,10 @@ public class ProcessTest {
 
 	@Test(expected=UnsupportedOperationException.class)
 	public void testUnsupportedOperationException() throws InterruptedException {
-		in.put(individual);
 		(new Process<TestContainer, TestContainer>(){
 			@Override
-			public Callable<TestContainer> transformer(final TestContainer individual) {
+			public <Individual extends TestContainer> Callable<TestContainer> transformer(CloseableBlockingQueue<Individual> in)
+					throws InterruptedException {
 				return null;
 			}
 			@Override
@@ -73,7 +74,7 @@ public class ProcessTest {
 				return individual;
 			}
 		}).transformPopulation(in, out);
-		assertThat(out.isClosed(), is(true));
+		assertTrue("Queue, out, should be closed.", out.isClosed());
 		assertEquals("Should pass through", individual, out.take());
 	}
 
@@ -89,7 +90,7 @@ public class ProcessTest {
 				return individual;
 			}
 		}).transformPopulation(in, out);
-		assertThat(out.isClosed(), is(true));
+		assertTrue("Queue, out, should be closed.", out.isClosed());
 		assertThat(out.size(), is(3));
 	}
 
@@ -145,7 +146,7 @@ public class ProcessTest {
 				return individual;
 			}
 		}).transformPopulation(in, out);
-		assertThat(out.isClosed(), is(true));
+		assertTrue("Queue, out, should be closed.", out.isClosed());
 		assertThat(result.get(), is(true));
 		assertThat(pop.size(), is(9));
 	}
