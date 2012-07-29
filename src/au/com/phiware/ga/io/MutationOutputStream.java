@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Random;
 
-class MutationOutputStream extends FilterOutputStream {
+public class MutationOutputStream extends FilterOutputStream {
 	static double defaultMutationFrequency = 0.0001;
 	private double mutationFrequency = defaultMutationFrequency;
 	private Random random = new Random();
