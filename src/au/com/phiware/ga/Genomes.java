@@ -349,27 +349,10 @@ public final class Genomes {
 		return rv;
 	}
 
-	public static <Filter extends FilterOutputStream> byte[] getGenomeBytes(Container individual, Class<Filter> filter) throws IOException {
-		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-		OutputStream filtered = bytes;
-		try {
-			filtered = filter.getConstructor(OutputStream.class).newInstance(bytes);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-		DataOutputStream out = new DataOutputStream(filtered);
-		individual.writeGenome(out);
-		out.close();
-		byte[] rv = null;
-		rv = bytes.toByteArray();
-		genomes.put(individual, rv);
-		return rv;
-	}
-
 	/*
-	 * Returns null is specified filter does not define a public no-arg constructor or public constructor that accepts an OutputStream.
+	 * Returns null is specified filter(s) does not define a public no-arg constructor or public constructor that accepts an OutputStream.
 	 */
-	public static OutputStream[] getGenomeFilters(Container individual, Class<? extends FilterOutputStream>... filters) throws IOException {
+	public static OutputStream[] getGenomeFilters(Container from, Container to, Class<? extends FilterOutputStream>... filters) throws IOException {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		FilterOutputStream filtered = null;
 		List<OutputStream> filterList = new ArrayList<OutputStream>(filters.length + 2);
@@ -391,13 +374,16 @@ public final class Genomes {
 		}
 		DataOutputStream out = new DataOutputStream(filtered);
 		filterList.add(out);
-		individual.writeGenome(out);
+		from.writeGenome(out);
 		out.close();
 		byte[] rv = null;
 		if (bytes != null)
 			rv = bytes.toByteArray();
-		genomes.put(individual, rv);
+		genomes.put(to, rv);
 		OutputStream[] a = new OutputStream[filterList.size()];
 		return filterList.toArray(a);
+	}
+	public static OutputStream[] getGenomeFilters(Container self, Class<? extends FilterOutputStream>... filters) throws IOException {
+		return getGenomeFilters(self, self, filters);
 	}
 }
