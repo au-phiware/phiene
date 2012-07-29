@@ -1,7 +1,5 @@
 package au.com.phiware.ga;
 
-import static org.junit.Assert.assertTrue;
-
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -133,12 +131,11 @@ public abstract class Process<Ante extends Container, Post extends Container> {
 		
 		while (!Process.class.equals(actualClass)) {
 			actualType = actualClass.getGenericSuperclass();
-			assertTrue("Superclass should be a Class or ParameterizedType",
-					actualType instanceof Class<?> || actualType instanceof ParameterizedType);
+			assert(actualType instanceof Class<?> || actualType instanceof ParameterizedType);
 			
 			if (actualType instanceof ParameterizedType) {
 				Type rawType = ((ParameterizedType) actualType).getRawType();
-				assertTrue("What? It doesn't return a Class??", rawType instanceof Class<?>);
+				assert rawType instanceof Class<?>;
 				actualClass = (Class<?>) rawType;
 			} else
 				actualClass = (Class<?>) actualType;
