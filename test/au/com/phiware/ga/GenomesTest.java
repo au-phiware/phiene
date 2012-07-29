@@ -1254,12 +1254,6 @@ public class GenomesTest {
 		assertArrayEquals(genome, Genomes.getGenomeBytes(individual));
 	}
 
-	@Test
-	public void testGetGenomeBytesContainerClassOfFilter() throws IOException {
-		individual.bytes = phenome;
-		assertArrayEquals(invGenome, Genomes.getGenomeBytes(individual, InverterOutputStream.class));
-	}
-
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testGetGenomeFilter() throws IOException {

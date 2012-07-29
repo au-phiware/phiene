@@ -325,15 +325,22 @@ public final class Genomes {
 	}
 	
 	public static void setGenomeBytes(Container individual, byte[] bytes) throws IOException {
-		if (bytes != null)
-			individual.readGenome(new DataInputStream(new ByteArrayInputStream(bytes)));
-		genomes.put(individual, bytes);
+		if (individual instanceof ByteContainer)
+			((ByteContainer) individual).setGenome(bytes);
+		else {
+			if (bytes != null)
+				individual.readGenome(new DataInputStream(new ByteArrayInputStream(bytes)));
+			genomes.put(individual, bytes.clone());
+		}
 	}
 
 	public static byte[] getGenomeBytes(Container individual) throws IOException {
+		if (individual instanceof ByteContainer)
+			return ((ByteContainer) individual).getGenome();
+		
 		byte[] rv = genomes.get(individual);
 		if (rv != null)
-			return rv;
+			return rv.clone(); //TODO: Should this return a copy or not?
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		DataOutputStream out = new DataOutputStream(bytes);
 		individual.writeGenome(out);
