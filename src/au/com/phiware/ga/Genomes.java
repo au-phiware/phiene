@@ -328,9 +328,11 @@ public final class Genomes {
 		if (individual instanceof ByteContainer)
 			((ByteContainer) individual).setGenome(bytes);
 		else {
-			if (bytes != null)
+			if (bytes != null) {
 				individual.readGenome(new DataInputStream(new ByteArrayInputStream(bytes)));
-			genomes.put(individual, bytes.clone());
+				genomes.put(individual, bytes.clone());
+			} else
+				genomes.remove(individual);
 		}
 	}
 
@@ -379,7 +381,8 @@ public final class Genomes {
 		byte[] rv = null;
 		if (bytes != null)
 			rv = bytes.toByteArray();
-		genomes.put(to, rv);
+		if (to != null)
+			setGenomeBytes(to, rv);
 		OutputStream[] a = new OutputStream[filterList.size()];
 		return filterList.toArray(a);
 	}
