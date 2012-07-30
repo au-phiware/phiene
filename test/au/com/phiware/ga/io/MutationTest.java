@@ -75,7 +75,7 @@ public class MutationTest {
 					if (mutator.getMutationCount() > 0)
 						Genomes.setGenomeBytes(individual, bytes.toByteArray());
 				} catch (IOException e) {
-					throw new EvolutionTransformException(e);
+					throw new TransformException(e);
 				}
 				return individual;
 			}

@@ -14,25 +14,25 @@ import java.util.concurrent.TimeUnit;
 import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
-public class Evolution<Individual extends Container> {
+public class Environment<Individual extends Container> {
 	private Collection<Individual> population = new HashSet<Individual>();
 	private List<Process<? extends Container, ? extends Container>> processes = new ArrayList<Process<? extends Container, ? extends Container>>();
 
 	private int generationCount = 0;
 
-	public Evolution() {
+	public Environment() {
 		this(null, (Individual[]) null);
 	}
 	
-	public Evolution(Individual... population) {
+	public Environment(Individual... population) {
 		this(null, population);
 	}
 
-	public Evolution(Process<? super Individual, ? extends Container> firstProcess) {
+	public Environment(Process<? super Individual, ? extends Container> firstProcess) {
 		this(firstProcess, (Individual[]) null);
 	}
 	
-	public Evolution(
+	public Environment(
 			Process<? super Individual, ? extends Container> firstProcess,
 			Individual... population) {
 		if (population != null)
@@ -118,7 +118,7 @@ public class Evolution<Individual extends Container> {
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public void evolve() throws EvolutionTransformException {
+	public void evolve() throws TransformException {
 		if (population.isEmpty()) return;
 		
 		final Collection<Individual> pop = population;
@@ -193,7 +193,7 @@ public class Evolution<Individual extends Container> {
 
 		++generationCount;
 	}
-	public void evolve(int generationCount) throws EvolutionTransformException {
+	public void evolve(int generationCount) throws TransformException {
 		for (; generationCount > 0; generationCount--)
 			evolve();
 	}

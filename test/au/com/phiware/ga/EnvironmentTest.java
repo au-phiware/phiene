@@ -13,7 +13,7 @@ import org.junit.Test;
 
 import static org.hamcrest.core.Is.is;
 
-public class EvolutionTest {
+public class EnvironmentTest {
 	abstract class TestContainer implements Container {
 		String string = super.toString();
 		TestContainer() {}
@@ -92,14 +92,14 @@ public class EvolutionTest {
 	@Test
 	@SuppressWarnings("rawtypes")
 	public void testIndividualUpperBound() {
-		assertEquals(Container.class, individualUpperBound(new Evolution<A>(new A2B())));
-		assertEquals(Container.class, individualUpperBound(new Evolution<AC>(new A2B())));
-		assertEquals(Container.class, individualUpperBound(newEvolution(A.class)));
-		assertEquals(Container.class, individualUpperBound(new Evolution()));
-		assertEquals(A.class, individualUpperBound(new Evolution<A>(new A2B()){}));
+		assertEquals(Container.class, individualUpperBound(new Environment<A>(new A2B())));
+		assertEquals(Container.class, individualUpperBound(new Environment<AC>(new A2B())));
+		assertEquals(Container.class, individualUpperBound(newEnvironment(A.class)));
+		assertEquals(Container.class, individualUpperBound(new Environment()));
+		assertEquals(A.class, individualUpperBound(new Environment<A>(new A2B()){}));
 	}
-	private <T extends Container> Evolution<T> newEvolution(Class<T> type) {
-		return new Evolution<T>(new Process<T, T>(){
+	private <T extends Container> Environment<T> newEnvironment(Class<T> type) {
+		return new Environment<T>(new Process<T, T>(){
 			@Override public T transform(T x) {return x;}
 		});
 	}
@@ -109,12 +109,12 @@ public class EvolutionTest {
 	public void testCompatibleProcesses() throws Throwable {
 		AC[] pop = new AC[1];
 		
-		Evolution<AC> evolution = new Evolution<AC>(new A2BC(), new AC(test));
-		evolution.appendProcess(new AD2ACE(), new B2ADF());
-		assertThat("Should have processes.", 3, is(evolution.getProcesses().size()));
+		Environment<AC> environment = new Environment<AC>(new A2BC(), new AC(test));
+		environment.appendProcess(new AD2ACE(), new B2ADF());
+		assertThat("Should have processes.", 3, is(environment.getProcesses().size()));
 
-		evolution.evolve();
-		pop = evolution.getPopulation().toArray(pop);
+		environment.evolve();
+		pop = environment.getPopulation().toArray(pop);
 		assertThat("Population should be singular", 1, is(pop.length));
 		assertEquals("Population should transform", pop[0].getClass(), ACE.class); 
 	}
@@ -122,24 +122,24 @@ public class EvolutionTest {
 	@Test(expected=ClassCastException.class)
 	@SuppressWarnings("unchecked")
 	public void testIncompatibleProcesses() throws Throwable {
-		Evolution<AC> evolution = new Evolution<AC>(new A2BC());
-		evolution.appendProcess(new ADF2ACE(), new B2AD());
+		Environment<AC> environment = new Environment<AC>(new A2BC());
+		environment.appendProcess(new ADF2ACE(), new B2AD());
 	}
 
-	private Class<?> individualUpperBound(Evolution<?> subtype) {
+	private Class<?> individualUpperBound(Environment<?> subtype) {
 		@SuppressWarnings("rawtypes")
-		Class<? extends Evolution> subclass = subtype.getClass();
+		Class<? extends Environment> subclass = subtype.getClass();
 		Type actualType = subclass;
 		Class<?> actualClass = subclass;
 		Type individualType;
 		Class<?> individualClass = null;
 		
-		if (Evolution.class.equals(actualClass)) {
+		if (Environment.class.equals(actualClass)) {
 			TypeVariable<?>[] parameters = actualClass.getTypeParameters();
 			individualType = parameters[0];
 			//individualClass = Container.class;
 		} else {
-			while (!Evolution.class.equals(actualClass)) {
+			while (!Environment.class.equals(actualClass)) {
 				actualType = actualClass.getGenericSuperclass();
 				assertTrue("Superclass should be a Class or ParameterizedType",
 						actualType instanceof Class<?> || actualType instanceof ParameterizedType);

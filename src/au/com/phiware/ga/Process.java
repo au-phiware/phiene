@@ -35,7 +35,7 @@ public abstract class Process<Ante extends Container, Post extends Container> {
 			} catch (RuntimeException e) {
 				throw e;
 			} catch (Exception e) {
-				throw new EvolutionTransformException(e);
+				throw new TransformException(e);
 			}
 		}
 		
@@ -54,7 +54,7 @@ public abstract class Process<Ante extends Container, Post extends Container> {
 	public void transformPopulation(
 			final CloseableBlockingQueue<? extends Ante> in,
 			final CloseableBlockingQueue<? super Post> out)
-					throws EvolutionTransformException {
+					throws TransformException {
 		ExecutorService executor = Executors.newCachedThreadPool();
 		List<Future<Post>> results = new LinkedList<Future<Post>>();
 		boolean repeat = isTransformRepeated();
