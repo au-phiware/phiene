@@ -35,7 +35,7 @@ public abstract class Meiosis<Individual extends Ploid<?>> extends Variation<Ind
 	@Override
 	public int getRepeatCount(Individual individual) {
 		if (numberOfChromosomes <= 0)
-			numberOfChromosomes =individual.getNumberOfParents();
+			numberOfChromosomes = numberOfChromosomes(individual);
 		return 4 * numberOfChromosomes;
 	}
 

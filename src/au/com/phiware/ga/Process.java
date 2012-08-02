@@ -68,10 +68,10 @@ public abstract class Process<Ante extends Container, Post extends Container> {
 						if (transformer == null)
 							throw new UnsupportedOperationException("Transformer expected");
 						
-						results.add(executor.submit(transformer));
 						if (repeat && transformer instanceof Process.Repeatable)
 							for (int i = ((Repeatable) transformer).repeatCount(); i > 0; i--)
 								results.add(executor.submit(transformer));
+						results.add(executor.submit(transformer));
 					}
 				} catch (QueueClosedException good) {}
 	
