@@ -15,8 +15,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.WeakHashMap;
 
+import au.com.phiware.ga.io.RandomInputStream;
 import au.com.phiware.math.bankers.Bankers;
 
 public final class Genomes {
@@ -324,6 +326,13 @@ public final class Genomes {
 	    }
 	}
 	
+	public static void initGenome(Container individual, Random rnd) throws IOException {
+		individual.readGenome(new DataInputStream(new RandomInputStream(rnd)));
+	}
+	public static void initGenome(Container individual) throws IOException {
+		initGenome(individual, new Random());
+	}
+
 	public static void setGenomeBytes(Container individual, byte[] bytes) throws IOException {
 		if (individual instanceof ByteContainer)
 			((ByteContainer) individual).setGenome(bytes);
