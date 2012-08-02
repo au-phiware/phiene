@@ -56,7 +56,16 @@ public class Environment<Individual extends Container> {
 	public boolean addToPopulation(Individual member) {
 		return this.population.add(member);
 	}
-	
+
+	/**
+	 * Returns <tt>true</tt> if the population should be clear during this environments evolve cycle, <tt>false</tt> otherwise.
+	 * Default implementation returns <tt>false</tt>.
+	 * @return <tt>true</tt> if the population should be clear during this environments evolve cycle, <tt>false</tt> otherwise.
+	 */
+	public boolean shouldFlushPopulation() {
+		return false;
+	}
+
 	/**
 	 * @return the processes
 	 */
@@ -156,9 +165,10 @@ public class Environment<Individual extends Container> {
 		eater = in;
 		
 		try {
-			/* Gobble up the new population, after the feeder is closed. */
+			/* Gobble up the new population, after the feeder is fed. */
 			feedResult.get();
-			population.clear();
+			if (shouldFlushPopulation())
+				population.clear();
 			future.add(executor.submit(new Runnable() {
 				public void run() {
 					try {
@@ -191,6 +201,7 @@ public class Environment<Individual extends Container> {
 
 		++generationCount;
 	}
+	
 	public void evolve(int generationCount) throws TransformException {
 		for (; generationCount > 0; generationCount--)
 			evolve();
