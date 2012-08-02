@@ -61,46 +61,49 @@ public abstract class Process<Ante extends Container, Post extends Container> {
 		
 		try {
 			try {
-				for (;;) {
-					Callable<Post> transformer = transformer(in);
-					
-					if (transformer == null)
-						throw new UnsupportedOperationException("Transformer expected");
-					
-					results.add(executor.submit(transformer));
-					if (repeat && transformer instanceof Process.Repeatable)
-						for (int i = ((Repeatable) transformer).repeatCount(); i > 0; i--)
-							results.add(executor.submit(transformer));
-				}
-			} catch (QueueClosedException good) {}
-
-			while (!results.isEmpty()) {
-				Collections.sort(results, new Comparator<Future<Post>>() {
-					public int compare(Future<Post> a, Future<Post> b) {
-						boolean done = a.isDone();
-						return done == b.isDone() ? 0 : (done ? -1 : 1);
-					}
-				});
 				try {
-					Iterator<Future<Post>> i = results.iterator();
-					while (i.hasNext()) {
-						try {
-							Post individual = i.next().get(10, TimeUnit.MILLISECONDS);
-							i.remove();
-							if (individual != null)
-								out.put(individual);
-						} catch (ExecutionException e) {
-							//i.remove();
-							if (e.getCause() instanceof RuntimeException)
-								throw (RuntimeException) e.getCause();
-							else
-								throw new RuntimeException(e);
-						}
+					for (;;) {
+						Callable<Post> transformer = transformer(in);
+						
+						if (transformer == null)
+							throw new UnsupportedOperationException("Transformer expected");
+						
+						results.add(executor.submit(transformer));
+						if (repeat && transformer instanceof Process.Repeatable)
+							for (int i = ((Repeatable) transformer).repeatCount(); i > 0; i--)
+								results.add(executor.submit(transformer));
 					}
-				} catch (TimeoutException resort) {}
+				} catch (QueueClosedException good) {}
+	
+				while (!results.isEmpty()) {
+					Collections.sort(results, new Comparator<Future<Post>>() {
+						public int compare(Future<Post> a, Future<Post> b) {
+							boolean done = a.isDone();
+							return done == b.isDone() ? 0 : (done ? -1 : 1);
+						}
+					});
+					try {
+						Iterator<Future<Post>> i = results.iterator();
+						while (i.hasNext()) {
+							try {
+								Post individual = i.next().get(10, TimeUnit.MILLISECONDS);
+								i.remove();
+								if (individual != null)
+									out.put(individual);
+							} catch (ExecutionException e) {
+								//i.remove();
+								if (e.getCause() instanceof RuntimeException)
+									throw (RuntimeException) e.getCause();
+								else
+									throw new RuntimeException(e);
+							}
+						}
+					} catch (TimeoutException resort) {}
+				}
+			} finally {
+				out.close();
 			}
-		}
-		catch (InterruptedException earlyExit) {
+		} catch (InterruptedException earlyExit) {
 			@SuppressWarnings("unused")
 			int dropCount = 0;
 			
@@ -114,9 +117,6 @@ public abstract class Process<Ante extends Container, Post extends Container> {
 				dropCount = executor.shutdownNow().size();
 			
 			//dropCount += done count in results(?)
-		}
-		finally {
-			out.close();
 		}
 	}
 	

@@ -139,9 +139,6 @@ public class Environment<Individual extends Container> {
 						feeder.put(i);
 				}
 				catch (InterruptedException earlyExit) {}
-				finally {
-					feeder.close();
-				}
 			}
 		});
 		
@@ -170,6 +167,7 @@ public class Environment<Individual extends Container> {
 					} catch (InterruptedException earlyExit) {}
 				}
 			}));
+			feeder.close();
 
 			/* Block until all processes are finished, throw any exceptions encountered. */ 
 			for (Future result : future)
