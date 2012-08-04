@@ -22,59 +22,50 @@ import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
 public abstract class AbstractProcess<Ante extends Container, Post extends Container> implements Process<Ante, Post> {
-	private class Repeatable implements Callable<Post> {
-		private Ante individual;
-		
-		public Repeatable(Ante individual) {
-			this.individual = individual;
-		}
-		
-		public Post call() {
-			try {
-				return transform(individual);
-			} catch (RuntimeException e) {
-				throw e;
-			} catch (Exception e) {
-				throw new TransformException(e);
-			}
-		}
-		
-		public int repeatCount() {
-			return getRepeatCount(individual);
-		}
-	}
-	
 	public abstract Post transform(Ante individual);
-
+	
 	public <Individual extends Ante> Callable<Post> transformer(CloseableBlockingQueue<Individual> in)
 			throws InterruptedException {
-		return new Repeatable(in.take());
+		final Ante individual = in.take();
+		return new Callable<Post>() {
+			public Post call() {
+				try {
+					return transform(individual);
+				} catch (RuntimeException e) {
+					throw e;
+				} catch (Exception e) {
+					throw new TransformException(e);
+				}
+			}
+		};
 	}
-
+	
+	protected List<Future<Post>> submitTransformers(final CloseableBlockingQueue<? extends Ante> in, final ExecutorService executor) throws InterruptedException {
+		List<Future<Post>> results = new LinkedList<Future<Post>>();
+		try {
+			for (;;) {
+				Callable<Post> transformer = transformer(in);
+				
+				if (transformer == null)
+					throw new UnsupportedOperationException("Transformer expected");
+				
+				results.add(executor.submit(transformer));
+			}
+		} catch (QueueClosedException expected) {}
+		return results;
+	}
+	
 	@Override
 	public void transformPopulation(
 			final CloseableBlockingQueue<? extends Ante> in,
 			final CloseableBlockingQueue<? super Post> out)
 					throws TransformException {
 		ExecutorService executor = Executors.newCachedThreadPool();
-		List<Future<Post>> results = new LinkedList<Future<Post>>();
-		boolean repeat = isTransformRepeated();
+		List<Future<Post>> results;
 		
 		try {
 			try {
-				try {
-					for (;;) {
-						Callable<Post> transformer = transformer(in);
-						
-						if (transformer == null)
-							throw new UnsupportedOperationException("Transformer expected");
-						
-						if (repeat && transformer instanceof AbstractProcess.Repeatable)
-							for (int i = ((Repeatable) transformer).repeatCount(); i > 0; i--)
-								results.add(executor.submit(transformer));
-						results.add(executor.submit(transformer));
-					}
-				} catch (QueueClosedException good) {}
+				results = submitTransformers(in, executor);
 	
 				while (!results.isEmpty()) {
 					Collections.sort(results, new Comparator<Future<Post>>() {
@@ -99,7 +90,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 									throw new RuntimeException(e);
 							}
 						}
-					} catch (TimeoutException resort) {}
+					} catch (TimeoutException sortAgain) {}
 				}
 			} finally {
 				out.close();
@@ -121,26 +112,6 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 		}
 	}
 	
-	/**
-	 * Returns the number of times that this process' transform should be repeated for the specified individual.
-	 * This implementation returns zero, meaning the transform will be executed once per individual.
-	 * This method is only called when {@link #isTransformRepeated()} returns <tt>true</tt>.
-	 * @param individual with which the this process' transform method will called.
-	 * @return transform repeat count for specified individual.
-	 */
-	public int getRepeatCount(Ante individual) {
-		return 0;
-	}
-
-	/**
-	 * Returns <tt>true</tt> when this process produces more than one post-individual for each ante-individual, <tt>false</tt> otherwise.
-	 * This implementation returns <tt>false</tt>.
-	 * @return <tt>true</tt> when this process produces more than one post-individual for each ante-individual, <tt>false</tt> otherwise.
-	 */
-	public boolean isTransformRepeated() {
-		return false;
-	}
-
 	static Class<?> actualPostType(
 			Process<? extends Container, ? extends Container> process) {
 		return actualProcessType(1, process);
