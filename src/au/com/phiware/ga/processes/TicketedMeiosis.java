@@ -8,6 +8,6 @@ public class TicketedMeiosis<Individual extends Ploid<?>> extends Meiosis<Indivi
 	public int getRepeatCount(Individual individual) {
 		if (numberOfChromosomes <= 0)
 			numberOfChromosomes(individual);
-		return Tickets.getTickets(individual);
+		return Tickets.getTickets(individual) - 1;
 	}
 }
