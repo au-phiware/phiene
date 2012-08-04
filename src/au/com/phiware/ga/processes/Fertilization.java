@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+import au.com.phiware.ga.AbstractProcess;
 import au.com.phiware.ga.Genomes;
 import au.com.phiware.ga.TransformException;
 import au.com.phiware.ga.Transmission;
@@ -19,7 +20,7 @@ import au.com.phiware.ga.containers.Polyploid;
 import au.com.phiware.ga.io.ChromosomeInputStream;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
-public abstract class Fertilization<Parent extends Haploid<Individual>, Individual extends Polyploid<Parent>> extends Transmission<Parent, Individual> {
+public abstract class Fertilization<Parent extends Haploid<Individual>, Individual extends Polyploid<Parent>> extends AbstractProcess<Parent, Individual> implements Transmission<Parent, Individual> {
 	public Individual transform() {
 		try {
 			ParameterizedType superType = (ParameterizedType) this.getClass().getGenericSuperclass();

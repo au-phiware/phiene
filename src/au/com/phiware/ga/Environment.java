@@ -95,19 +95,19 @@ public class Environment<Individual extends Container> {
 		int priorSize = processes.size();
 		
 		try {
-			Class<?> anteType, postType = Process.actualPostType(processes.get(priorSize - 1));
+			Class<?> anteType, postType = AbstractProcess.actualPostType(processes.get(priorSize - 1));
 			if (reverseOrderedProcesses != null)
 			for(int i = reverseOrderedProcesses.length; i > 0;) {
 				Process<? extends Container, ? extends Container> process = reverseOrderedProcesses[--i];
 				
-				anteType = Process.actualAnteType(process);
+				anteType = AbstractProcess.actualAnteType(process);
 				if (!anteType.isAssignableFrom(postType))
 					throw new ClassCastException(postType.getName()+" cannot be cast to "+anteType.getName());
-				postType = Process.actualPostType(process);
+				postType = AbstractProcess.actualPostType(process);
 
 				processes.add(process);
 			}
-			anteType = Process.actualAnteType(lastProcess);
+			anteType = AbstractProcess.actualAnteType(lastProcess);
 			if (!anteType.isAssignableFrom(postType))
 				throw new ClassCastException(postType.getName()+" cannot be cast to "+anteType.getName());
 			processes.add(lastProcess);

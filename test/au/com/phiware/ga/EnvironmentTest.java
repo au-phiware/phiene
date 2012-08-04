@@ -37,46 +37,46 @@ public class EnvironmentTest {
 	class BDE extends BD {BDE(){} BDE(Container x) {super(x);}}
 	class BDF extends BD {BDF(){} BDF(Container x) {super(x);}}
 	
-	class ACE2B extends Process<ACE, B>{
+	class ACE2B extends AbstractProcess<ACE, B>{
 		@Override public B transform(ACE ace) {return new B(ace);}
 	}
-	class A2B extends Process<A, B>{
+	class A2B extends AbstractProcess<A, B>{
 		@Override public B transform(A a) {return new B(a);}
 	}
-	class A2BC extends Process<A, BC>{
+	class A2BC extends AbstractProcess<A, BC>{
 		@Override public BC transform(A a) {return new BC(a);}
 	}
-	class A2ACE extends Process<A, ACE>{
+	class A2ACE extends AbstractProcess<A, ACE>{
 		@Override public ACE transform(A a) {return new ACE(a);}
 	}
-	class B2A extends Process<B, A>{
+	class B2A extends AbstractProcess<B, A>{
 		@Override public A transform(B b) {return new A(b);}
 	}
-	class BD2A extends Process<BD, A>{
+	class BD2A extends AbstractProcess<BD, A>{
 		@Override public A transform(BD bd) {return new A(bd);}
 	}
-	class BDF2A extends Process<BDF, A>{
+	class BDF2A extends AbstractProcess<BDF, A>{
 		@Override public A transform(BDF bdf) {return new A(bdf);}
 	}
-	class BC2ACE extends Process<BC, ACE>{
+	class BC2ACE extends AbstractProcess<BC, ACE>{
 		@Override public ACE transform(BC bc) {return new ACE(bc);}
 	}
-	class AD2ACE extends Process<AD, ACE>{
+	class AD2ACE extends AbstractProcess<AD, ACE>{
 		@Override public ACE transform(AD ad) {return new ACE(ad);}
 	}
-	class ADF2ACE extends Process<ADF, ACE>{
+	class ADF2ACE extends AbstractProcess<ADF, ACE>{
 		@Override public ACE transform(ADF adf) {return new ACE(adf);}
 	}
-	class B2ACE extends Process<B, ACE>{
+	class B2ACE extends AbstractProcess<B, ACE>{
 		@Override public ACE transform(B b) {return new ACE(b);}
 	}
-	class B2AD extends Process<B, AD>{
+	class B2AD extends AbstractProcess<B, AD>{
 		@Override public AD transform(B b) {return new AD(b);}
 	}
-	class B2ADE extends Process<B, ADE>{
+	class B2ADE extends AbstractProcess<B, ADE>{
 		@Override public ADE transform(B b) {return new ADE(b);}
 	}
-	class B2ADF extends Process<B, ADF>{
+	class B2ADF extends AbstractProcess<B, ADF>{
 		@Override public ADF transform(B b) {return new ADF(b);}
 	}
 
@@ -99,7 +99,7 @@ public class EnvironmentTest {
 		assertEquals(A.class, individualUpperBound(new Environment<A>(new A2B()){}));
 	}
 	private <T extends Container> Environment<T> newEnvironment(Class<T> type) {
-		return new Environment<T>(new Process<T, T>(){
+		return new Environment<T>(new AbstractProcess<T, T>(){
 			@Override public T transform(T x) {return x;}
 		});
 	}

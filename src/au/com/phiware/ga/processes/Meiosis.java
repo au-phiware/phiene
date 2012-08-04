@@ -6,6 +6,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Random;
 
+import au.com.phiware.ga.AbstractProcess;
 import au.com.phiware.ga.TransformException;
 import au.com.phiware.ga.Genomes;
 import au.com.phiware.ga.Variation;
@@ -13,7 +14,7 @@ import au.com.phiware.ga.containers.Haploid;
 import au.com.phiware.ga.containers.Ploid;
 import au.com.phiware.ga.io.MutationOutputStream;
 
-public abstract class Meiosis<Individual extends Ploid<?>> extends Variation<Individual, Haploid<Individual>> {
+public abstract class Meiosis<Individual extends Ploid<?>> extends AbstractProcess<Individual, Haploid<Individual>> implements Variation<Individual, Haploid<Individual>> {
 	private class CrossoverOutputStream extends au.com.phiware.ga.io.CrossoverOutputStream {
 		CrossoverOutputStream(OutputStream out) {
 			super(out, numberOfChromosomes(null));

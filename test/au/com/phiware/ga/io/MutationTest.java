@@ -63,7 +63,7 @@ public class MutationTest {
 		in.add(individual);
 		in.close();
 
-		Variation<Container, Container> mutation = new Variation<Container, Container>(){
+		AbstractProcess<Container, Container> mutation = new AbstractProcess<Container, Container>(){
 			@Override
 			public Container transform(Container individual) {
 				try {

@@ -51,7 +51,7 @@ public class ProcessTest {
 
 	@Test(expected=UnsupportedOperationException.class)
 	public void testUnsupportedOperationException() throws InterruptedException {
-		(new Process<TestContainer, TestContainer>(){
+		(new AbstractProcess<TestContainer, TestContainer>(){
 			@Override
 			public <Individual extends TestContainer> Callable<TestContainer> transformer(CloseableBlockingQueue<Individual> in)
 					throws InterruptedException {
@@ -68,7 +68,7 @@ public class ProcessTest {
 	public void testOne() throws InterruptedException {
 		in.put(individual);
 		in.close();
-		(new Process<TestContainer, TestContainer>(){
+		(new AbstractProcess<TestContainer, TestContainer>(){
 			@Override
 			public TestContainer transform(TestContainer individual) {
 				return individual;
@@ -84,7 +84,7 @@ public class ProcessTest {
 		in.put(new TestContainer());
 		in.put(new TestContainer());
 		in.close();
-		(new Process<TestContainer, TestContainer>(){
+		(new AbstractProcess<TestContainer, TestContainer>(){
 			@Override
 			public TestContainer transform(TestContainer individual) {
 				return individual;
@@ -132,7 +132,7 @@ public class ProcessTest {
 					pop.add(out.take()); // 7
 					pop.add(out.take()); // 8
 					pop.add(out.take()); // 9
-					pop.add(out.take()); // Oh-O...
+					pop.add(out.take()); // Oh No!
 				} catch (QueueClosedException e) {
 					return true;
 				} catch (InterruptedException e) {
@@ -140,7 +140,7 @@ public class ProcessTest {
 				}
 				return false;
 			}});
-		(new Process<TestContainer, TestContainer>(){
+		(new AbstractProcess<TestContainer, TestContainer>(){
 			@Override
 			public TestContainer transform(TestContainer individual) {
 				return individual;
