@@ -171,10 +171,10 @@ public class Environment<Individual extends Container> {
 				population.clear();
 			future.add(executor.submit(new Runnable() {
 				public void run() {
-					try {
-						Individual individual = eater.take();
-						population.add(individual);
-					} catch (InterruptedException earlyExit) {}
+					eater.drainTo(population);
+					if (!Thread.interrupted()) {
+						assert(eater.isClosed());
+					}//else exit early
 				}
 			}));
 			feeder.close();
