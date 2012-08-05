@@ -63,11 +63,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 		ExecutorService executor = Executors.newCachedThreadPool();
 		
 		try {
-			try {
 			drainFutures(submitTransformers(in, executor), out);
-			} finally {
-				out.close();
-			}
 		} catch (InterruptedException earlyExit) {
 			@SuppressWarnings("unused")
 			int dropCount = 0;

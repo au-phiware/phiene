@@ -74,6 +74,7 @@ public class ProcessTest {
 				return individual;
 			}
 		}).transformPopulation(in, out);
+		out.close();
 		assertTrue("Queue, out, should be closed.", out.isClosed());
 		assertEquals("Should pass through", individual, out.take());
 	}
@@ -90,6 +91,7 @@ public class ProcessTest {
 				return individual;
 			}
 		}).transformPopulation(in, out);
+		out.close();
 		assertTrue("Queue, out, should be closed.", out.isClosed());
 		assertThat(out.size(), is(3));
 	}
@@ -146,6 +148,7 @@ public class ProcessTest {
 				return individual;
 			}
 		}).transformPopulation(in, out);
+		out.close();
 		assertTrue("Queue, out, should be closed.", out.isClosed());
 		assertThat(result.get(), is(true));
 		assertThat(pop.size(), is(9));

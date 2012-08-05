@@ -157,7 +157,14 @@ public class Environment<Individual extends Container> {
 			final CloseableBlockingQueue safeOut = new ArrayCloseableBlockingQueue<Container>(bufferSize);
 			future.add(executor.submit(new Runnable() {
 				public void run() {
-					process.transformPopulation(safeIn, safeOut);
+					try {
+						process.transformPopulation(safeIn, safeOut);
+					} finally {
+						try {
+							safeOut.close();
+						}
+						catch (InterruptedException earlyExit) {}
+					}
 				}
 			}));
 			in = safeOut;
