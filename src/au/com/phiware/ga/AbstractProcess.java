@@ -61,37 +61,10 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			final CloseableBlockingQueue<? super Post> out)
 					throws TransformException {
 		ExecutorService executor = Executors.newCachedThreadPool();
-		List<Future<Post>> results;
 		
 		try {
 			try {
-				results = submitTransformers(in, executor);
-	
-				while (!results.isEmpty()) {
-					Collections.sort(results, new Comparator<Future<Post>>() {
-						public int compare(Future<Post> a, Future<Post> b) {
-							boolean done = a.isDone();
-							return done == b.isDone() ? 0 : (done ? -1 : 1);
-						}
-					});
-					try {
-						Iterator<Future<Post>> i = results.iterator();
-						while (i.hasNext()) {
-							try {
-								Post individual = i.next().get(10, TimeUnit.MILLISECONDS);
-								i.remove();
-								if (individual != null)
-									out.put(individual);
-							} catch (ExecutionException e) {
-								//i.remove();
-								if (e.getCause() instanceof RuntimeException)
-									throw (RuntimeException) e.getCause();
-								else
-									throw new RuntimeException(e);
-							}
-						}
-					} catch (TimeoutException sortAgain) {}
-				}
+			drainFutures(submitTransformers(in, executor), out);
 			} finally {
 				out.close();
 			}
@@ -112,6 +85,58 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 		}
 	}
 	
+	private static final Comparator<? super Future<?>> FUTURE_COMPARATOR = new Comparator<Future<?>>() {
+		public int compare(Future<?> a, Future<?> b) {
+			boolean done = a.isDone();
+			return done == b.isDone() ? 0 : (done ? -1 : 1);
+		}
+	};
+	protected static <T> void drainFutures(List<Future<T>> results, final CloseableBlockingQueue<? super T> out)
+			throws InterruptedException {
+		while (!results.isEmpty()) {
+			Collections.sort(results, FUTURE_COMPARATOR);
+			try {
+				Iterator<Future<T>> i = results.iterator();
+				while (i.hasNext()) {
+					try {
+						T t = i.next().get(5, TimeUnit.MILLISECONDS);
+						i.remove();
+						if (out != null && 
+								t != null)
+							out.put(t);
+					} catch (ExecutionException e) {
+						//i.remove();
+						if (e.getCause() instanceof RuntimeException)
+							throw (RuntimeException) e.getCause();
+						else
+							throw new RuntimeException(e);
+					}
+				}
+			} catch (TimeoutException sortAgain) {}
+		}
+	}
+	protected static void drainFutures(List<Future<?>> results)
+			throws InterruptedException {
+		while (!results.isEmpty()) {
+			Collections.sort(results, FUTURE_COMPARATOR);
+			try {
+				Iterator<Future<?>> i = results.iterator();
+				while (i.hasNext()) {
+					try {
+						i.next().get(5, TimeUnit.MILLISECONDS);
+						i.remove();
+					} catch (ExecutionException e) {
+						//i.remove();
+						if (e.getCause() instanceof RuntimeException)
+							throw (RuntimeException) e.getCause();
+						else
+							throw new RuntimeException(e);
+					}
+				}
+			} catch (TimeoutException sortAgain) {}
+		}
+	}
+
 	static Class<?> actualPostType(
 			Process<? extends Container, ? extends Container> process) {
 		return actualProcessType(1, process);
