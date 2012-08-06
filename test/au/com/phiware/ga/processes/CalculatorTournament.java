@@ -13,8 +13,12 @@ public class CalculatorTournament extends
 
 	private final Random random;
 	
-	protected CalculatorTournament() {
-		super(2);
+	public CalculatorTournament() {
+		this(2);
+	}
+
+	protected CalculatorTournament(int numberOfParticipients) {
+		super(numberOfParticipients);
 		random = new Random();
 	}
 
