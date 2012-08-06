@@ -24,7 +24,7 @@ import au.com.phiware.util.concurrent.QueueClosedException;
 public abstract class AbstractProcess<Ante extends Container, Post extends Container> implements Process<Ante, Post> {
 	public abstract Post transform(Ante individual);
 	
-	public <Individual extends Ante> Callable<Post> transformer(CloseableBlockingQueue<Individual> in)
+	public Callable<Post> transformer(CloseableBlockingQueue<? extends Ante> in)
 			throws InterruptedException {
 		final Ante individual = in.take();
 		return new Callable<Post>() {

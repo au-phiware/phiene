@@ -37,7 +37,7 @@ public abstract class RepeatableProcess<Ante extends Container, Post extends Con
 	}
 	
 	@Override
-	public <Individual extends Ante> Callable<Post> transformer(CloseableBlockingQueue<Individual> in)
+	public Callable<Post> transformer(CloseableBlockingQueue<? extends Ante> in)
 			throws InterruptedException {
 		return new Repeatable(in.take());
 	}

@@ -44,11 +44,11 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 	}
 
 	@Override
-	public <Gamete extends Parent> Callable<Individual> transformer(final CloseableBlockingQueue<Gamete> in)
+	public Callable<Individual> transformer(final CloseableBlockingQueue<? extends Parent> in)
 			throws InterruptedException {
 		final Individual newBorn = transform();
 		final int size = newBorn.getNumberOfParents();
-		final List<Gamete> gametes = new ArrayList<Gamete>(size);
+		final List<Parent> gametes = new ArrayList<Parent>(size);
 
 		in.drainTo(gametes, size);
 		if (Thread.interrupted()) // Did not drain enough or we need to get out of here

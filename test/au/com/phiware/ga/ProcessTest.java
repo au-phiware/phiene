@@ -53,7 +53,7 @@ public class ProcessTest {
 	public void testUnsupportedOperationException() throws InterruptedException {
 		(new AbstractProcess<TestContainer, TestContainer>(){
 			@Override
-			public <Individual extends TestContainer> Callable<TestContainer> transformer(CloseableBlockingQueue<Individual> in)
+			public Callable<TestContainer> transformer(CloseableBlockingQueue<? extends TestContainer> in)
 					throws InterruptedException {
 				return null;
 			}

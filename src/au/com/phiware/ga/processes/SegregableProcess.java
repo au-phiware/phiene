@@ -78,7 +78,7 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 				}
 			} catch (QueueClosedException expected) {}
 			
-			for (CloseableBlockingQueue<Ante> q : categories)
+			for (CloseableBlockingQueue<? extends Ante> q : categories)
 				q.close();
 
 			drainFutures(results);

@@ -23,7 +23,6 @@ import au.com.phiware.ga.Container;
 import au.com.phiware.ga.Selection;
 import au.com.phiware.ga.TransformException;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
-import au.com.phiware.util.concurrent.QueueClosedException;
 import cern.colt.map.PrimeFinder;
 
 public abstract class TicketedTournament<Ante extends Container, Post extends Container>
@@ -74,7 +73,7 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 		return rv;
 	}
 
-	@Override public final <Individual extends Ante> Callable<Post> transformer(CloseableBlockingQueue<Individual> in)
+	@Override public final Callable<Post> transformer(CloseableBlockingQueue<? extends Ante> in)
 			throws InterruptedException {
 		return null;
 	}
