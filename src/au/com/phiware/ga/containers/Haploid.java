@@ -1,8 +1,6 @@
 package au.com.phiware.ga.containers;
 
 import java.lang.ref.WeakReference;
-import java.util.Collections;
-import java.util.List;
 
 
 public class Haploid<Parent extends Ploid<?>> extends AbstractByteContainer implements Ploid<Parent> {
@@ -30,11 +28,6 @@ public class Haploid<Parent extends Ploid<?>> extends AbstractByteContainer impl
 	@Override
 	public int getNumberOfParents() {
 		return 1;
-	}
-
-	@Override
-	public List<Parent> getParents() {
-		return Collections.singletonList(getParent());
 	}
 
 	@Override

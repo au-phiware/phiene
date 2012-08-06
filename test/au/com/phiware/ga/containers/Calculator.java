@@ -8,11 +8,10 @@ import java.lang.reflect.Type;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import au.com.phiware.ga.Container;
 import au.com.phiware.math.ring.ArithmeticFactory;
 import au.com.phiware.math.ring.BitArithmetic;
 
-public abstract class Calculator<V extends Number> implements Container {
+public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>>> {
 	enum Operation {
 		ZERO {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
@@ -113,6 +112,15 @@ public abstract class Calculator<V extends Number> implements Container {
 	
 	private BitArithmetic<V> arithmetic;
 
+	public static <V extends Number> Calculator<V> newCalculator(Class<V> elementType) {
+		try {
+			Calculator<V> rv = new Calculator<V>();
+			rv.arithmetic = ArithmeticFactory.getBitArithmetic(elementType);
+			return rv;
+		} catch (ClassNotFoundException e) {}
+		return null;
+	}
+	
 	@SuppressWarnings("unchecked")
 	public Calculator() throws ClassNotFoundException {
 		ParameterizedType superType = (ParameterizedType) this.getClass().getGenericSuperclass();
@@ -145,6 +153,11 @@ public abstract class Calculator<V extends Number> implements Container {
 		if (cursor >= instructions.length)
 			cursor = 0;
 		return instructions[cursor++];
+	}
+
+	@Override
+	public int getNumberOfParents() {
+		return 2;
 	}
 
 	@Override

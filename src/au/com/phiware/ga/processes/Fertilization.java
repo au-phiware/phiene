@@ -1,5 +1,7 @@
 package au.com.phiware.ga.processes;
 
+import static au.com.phiware.ga.containers.Ploids.*;
+
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
@@ -13,11 +15,11 @@ import au.com.phiware.ga.Genomes;
 import au.com.phiware.ga.TransformException;
 import au.com.phiware.ga.Transmission;
 import au.com.phiware.ga.containers.Haploid;
-import au.com.phiware.ga.containers.Polyploid;
+import au.com.phiware.ga.containers.Ploid;
 import au.com.phiware.ga.io.ChromosomeInputStream;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
-public abstract class Fertilization<Parent extends Haploid<? extends Individual>, Individual extends Polyploid<Parent>>
+public abstract class Fertilization<Parent extends Haploid<? extends Individual>, Individual extends Ploid<Parent>>
 		extends SegregableProcess<Parent, Individual>
 		implements Transmission<Parent, Individual> {
 	Class<Individual> actualType;
@@ -59,7 +61,7 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 				try {
 					final byte[][] heritage = new byte[size][];
 
-					newBorn.setParents(gametes);
+					setParents(newBorn, gametes);
                     
                     for (int i = 0; i < size; i++)
                             heritage[i] = Genomes.getGenomeBytes(gametes.get(i));
@@ -89,16 +91,16 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 	}
 
 	@Override
-	public boolean shouldSegregate(Parent individual,
-			CloseableBlockingQueue<Parent> in) throws InterruptedException {
+	public boolean shouldSegregate(Parent individual, CloseableBlockingQueue<Parent> in)
+			throws InterruptedException {
 		Individual parent, inlaw;
 
 		parent = individual.getParent();
 		if (parent != null) {
-			List<Parent> parents = parent.getParents();
+			List<Parent> parents = getParents(parent);
 			for (Parent peer : in) {
 				if ((inlaw = peer.getParent()) != null) {
-					if (parent == inlaw || !Collections.disjoint(parents, inlaw.getParents()))
+					if (parent == inlaw || !Collections.disjoint(parents, getParents(inlaw)))
 						return false;
 				}
 			}
