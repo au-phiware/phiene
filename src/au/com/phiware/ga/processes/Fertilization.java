@@ -17,7 +17,7 @@ import au.com.phiware.ga.containers.Polyploid;
 import au.com.phiware.ga.io.ChromosomeInputStream;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
-public abstract class Fertilization<Parent extends Haploid<Individual>, Individual extends Polyploid<Parent>>
+public abstract class Fertilization<Parent extends Haploid<? extends Individual>, Individual extends Polyploid<Parent>>
 		extends SegregableProcess<Parent, Individual>
 		implements Transmission<Parent, Individual> {
 	Class<Individual> actualType;
