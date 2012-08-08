@@ -123,11 +123,13 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 	
 	@SuppressWarnings("unchecked")
 	public Calculator() throws ClassNotFoundException {
-		ParameterizedType superType = (ParameterizedType) this.getClass().getGenericSuperclass();
-		while (!Calculator.class.equals(superType.getRawType()))
-			superType = (ParameterizedType) ((Class<?>) superType.getRawType()).getGenericSuperclass();
-		Type[] actualType = superType.getActualTypeArguments();
-		arithmetic = ArithmeticFactory.getBitArithmetic((Class<V>) actualType[0]);
+		if (!Calculator.class.equals(this.getClass())) {
+			ParameterizedType superType = (ParameterizedType) this.getClass().getGenericSuperclass();
+			while (!Calculator.class.equals(superType.getRawType()))
+				superType = (ParameterizedType) ((Class<?>) superType.getRawType()).getGenericSuperclass();
+			Type[] actualType = superType.getActualTypeArguments();
+			arithmetic = ArithmeticFactory.getBitArithmetic((Class<V>) actualType[0]);
+		}
 	}
 	
 	public static final int stepLimit = 1024;
@@ -172,7 +174,7 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 
 	@Override
 	public void readGenome(DataInput in) throws IOException {
-		Operation[] ops = Operation.values(); 
+		Operation[] ops = Operation.values();
 		for (int i = 0; i < instructions.length;) {
 			byte b = in.readByte();
 			instructions[i++] = ops[(b >>> 4) & 0xF];
