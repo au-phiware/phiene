@@ -327,12 +327,11 @@ public final class Genomes {
 	}
 	
 	public static <Individual extends Container> Individual initGenome(Individual individual, Random rnd) throws IOException {
-		individual.readGenome(new DataInputStream(new RandomInputStream(rnd)));
+		individual.readGenome(new java.io.DataInputStream(new RandomInputStream(rnd)));
 		return individual;
 	}
 	public static <Individual extends Container> Individual initGenome(Individual individual) throws IOException {
-		initGenome(individual, new Random());
-		return individual;
+		return initGenome(individual, new Random());
 	}
 
 	public static void setGenomeBytes(Container individual, byte[] bytes) throws IOException {

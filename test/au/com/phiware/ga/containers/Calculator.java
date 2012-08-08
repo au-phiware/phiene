@@ -175,7 +175,7 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 		Operation[] ops = Operation.values(); 
 		for (int i = 0; i < instructions.length;) {
 			byte b = in.readByte();
-			instructions[i++] = ops[b >>> 4];
+			instructions[i++] = ops[(b >>> 4) & 0xF];
 			instructions[i++] = ops[b & 0xF];
 		}
 	}
