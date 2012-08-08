@@ -133,35 +133,70 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 		}
 	}
 
-	static Class<?> actualPostType(
-			Process<? extends Container, ? extends Container> process) {
+	public static Class<?> actualPostType(Process<?, ?> process) {
 		return actualProcessType(1, process);
 	}
-	static Class<?> actualAnteType(
-			Process<? extends Container, ? extends Container> process) {
+	public static Class<?> actualAnteType(Process<?, ?> process) {
 		return actualProcessType(0, process);
 	}
-	static Class<?> actualProcessType(int i,
-			Process<? extends Container, ? extends Container> process) {
-		@SuppressWarnings("rawtypes")
-		Class<? extends Process> subclass = process.getClass();
-		Type actualType = subclass;
-		Class<?> actualClass = subclass;
+	private static Type parameterVariable(Type type, int i) {
+		Type var = null;
+
+		if (type instanceof ParameterizedType) {
+			ParameterizedType paramType = (ParameterizedType) type;
+			Type rawType = paramType.getRawType();
+			assert rawType instanceof Class<?>;
+		
+			if (Process.class.equals(rawType))
+				return paramType.getActualTypeArguments()[i];
+			
+			if (!Process.class.isAssignableFrom((Class<?>)rawType))
+				return null;
+
+			@SuppressWarnings("unchecked")
+			Class<? extends Process<?, ?>> rawClass = (Class<? extends Process<?, ?>>) rawType;
+
+			TypeVariable<?>[] params = rawClass.getTypeParameters();
+			Type[] actualParams = paramType.getActualTypeArguments();
+
+			Type superType = rawClass.getGenericSuperclass();
+			var = parameterVariable(superType, i);
+
+			if (var == null)
+				for (Type ifType : rawClass.getGenericInterfaces()) {
+					var = parameterVariable(ifType, i);
+					if (var != null)
+						break;
+				}
+			if (var != null && var instanceof TypeVariable) {
+				String name = ((TypeVariable<?>) var).getName();
+				for (int j = 0; j < params.length; j++)
+					if (name.equals(params[j].getName()))
+						return actualParams[j];
+			}
+		} else if (type instanceof Class) {
+			Class<?> rawClass = (Class<?>) type;
+
+			if (!Process.class.isAssignableFrom((Class<?>)rawClass))
+				return null;
+
+			Type superType = rawClass.getGenericSuperclass();
+			var = parameterVariable(superType, i);
+
+			if (var == null)
+				for (Type ifType : rawClass.getGenericInterfaces()) {
+					var = parameterVariable(ifType, i);
+					if (var != null)
+						break;
+				}
+		}
+		return var;
+	}
+	private static Class<?> actualProcessType(int i, Process<?, ?> process) {
 		Type individualType;
 		Class<?> individualClass = null;
-		
-		while (!Process.class.equals(actualClass)) {
-			actualType = actualClass.getGenericSuperclass();
-			assert(actualType instanceof Class<?> || actualType instanceof ParameterizedType);
-			
-			if (actualType instanceof ParameterizedType) {
-				Type rawType = ((ParameterizedType) actualType).getRawType();
-				assert rawType instanceof Class<?>;
-				actualClass = (Class<?>) rawType;
-			} else
-				actualClass = (Class<?>) actualType;
-		}
-		individualType = ((ParameterizedType) actualType).getActualTypeArguments()[i];
+
+		individualType = parameterVariable(process.getClass(), i);
 
 		while (individualClass == null) {
 			if (individualType instanceof GenericArrayType) {
