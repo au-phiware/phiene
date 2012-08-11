@@ -150,6 +150,8 @@ public class ChromosomeStreamTest {
 		
 		for (int i = 0; i < byteArray.length; i++)
 			strings[i] = Integer.toBinaryString(byteArray[i] & 0xFF);
+		
+		in.close();
 
 		assertArrayEquals(stringIn, strings);
 	}
@@ -172,6 +174,8 @@ public class ChromosomeStreamTest {
 				else
 					assertTrue("Should zero out double bit error, "+Integer.toBinaryString(byteErr[j]), x == 0);
 			}
+			
+			in.close();
 	
 			byteArray = errors.toByteArray();
 			for (i = 0; i < byteArray.length; i++)
