@@ -20,8 +20,10 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 		},
 		ADD {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.add(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.add(b, a));
+				}
 			}
 		},
 		NEGATE {
@@ -32,20 +34,26 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 		},
 		SUBTRACT {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.subtract(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.subtract(b, a));
+				}
 			}
 		},
 		MULTIPLY {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.multiply(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.multiply(b, a));
+				}
 			}
 		},
 		POW {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.pow(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.pow(b, a));
+				}
 			}
 		},
 		ONE {
@@ -55,32 +63,42 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 		},
 		MOD {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.mod(stack.pop(), stack.pop()));
+				if (stack.size() > 1 && !stack.peek().equals(arithmetic.zero())) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.mod(b, a));
+				}
 			}
 		},
 		OR {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.or(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.or(b, a));
+				}
 			}
 		},
 		AND {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.and(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.and(b, a));
+				}
 			}
 		},
 		NAND {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.nand(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.nand(b, a));
+				}
 			}
 		},
 		XOR {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.xor(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.xor(b, a));
+				}
 			}
 		},
 		NOT {
@@ -91,14 +109,18 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 		},
 		MIN {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.min(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.min(b, a));
+				}
 			}
 		},
 		MAX {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1)
-					stack.push(arithmetic.max(stack.pop(), stack.pop()));
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.max(b, a));
+				}
 			}
 		},
 		CLEAR {
