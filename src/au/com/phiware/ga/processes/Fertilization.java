@@ -31,8 +31,10 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 				ParameterizedType superType = (ParameterizedType) this.getClass().getGenericSuperclass();
 				while (!Fertilization.class.equals(superType.getRawType()))
 					superType = (ParameterizedType) ((Class<?>) superType.getRawType()).getGenericSuperclass();
-				Type[] actualType = superType.getActualTypeArguments();
-				this.actualType = (Class<Individual>) actualType[1];
+				Type actualType = superType.getActualTypeArguments()[1];
+				if (actualType instanceof ParameterizedType)
+					actualType = ((ParameterizedType) actualType).getRawType();
+				this.actualType = (Class<Individual>) actualType;
 			}
 			return this.actualType.newInstance();
 		} catch (InstantiationException e) {
