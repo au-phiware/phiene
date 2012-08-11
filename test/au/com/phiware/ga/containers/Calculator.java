@@ -160,7 +160,7 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 	public int calculate(V target) throws IOException {
 		int step = 0;
 		
-		while (!target.equals(stack.peek()) && step < stepLimit)
+		while (!target.equals(stack.peek()) && stepLimit > step++)
 			nextInstruction().execute(arithmetic, stack);
 		
 		return step;
