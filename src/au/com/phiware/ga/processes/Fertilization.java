@@ -18,6 +18,7 @@ import au.com.phiware.ga.containers.Haploid;
 import au.com.phiware.ga.containers.Ploid;
 import au.com.phiware.ga.io.ChromosomeInputStream;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
+import au.com.phiware.util.concurrent.QueueClosedException;
 
 public abstract class Fertilization<Parent extends Haploid<? extends Individual>, Individual extends Ploid<Parent>>
 		extends SegregableProcess<Parent, Individual>
@@ -57,6 +58,9 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 		in.drainTo(gametes, size);
 		if (Thread.interrupted()) // Did not drain enough or we need to get out of here
 			throw new InterruptedException();
+
+		if (in.isClosed())
+			throw new QueueClosedException();
 
 		return new Callable<Individual>() {
 			public Individual call() {
