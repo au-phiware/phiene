@@ -41,6 +41,7 @@ public final class Ploids {
 		return null;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public static <Parent extends Ploid<?>> void setParents(Ploid<Parent> individual, Collection<Parent> list) {
 		if (individual instanceof Haploid) {
 			if (list.size() > 1)
@@ -50,7 +51,9 @@ public final class Ploids {
 			int limit = individual.getNumberOfParents();
 			if (list.size() > limit)
 				throw new IllegalArgumentException("Collection size exceeds limit, " + limit);
-			parents.put(individual, Arrays.copyOf((Ploid[]) list.toArray(), limit));
+			Ploid<?>[] array = new Ploid<?>[list.size()];
+			array = list.toArray(array);
+			parents.put(individual, Arrays.copyOf((Parent[]) array, limit));
 		}
 	}
 	
