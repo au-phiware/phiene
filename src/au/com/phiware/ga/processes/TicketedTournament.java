@@ -48,7 +48,7 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 		TreeSet<CloseableBlockingQueue<Ante>> rv = new TreeSet<CloseableBlockingQueue<Ante>>(
 				new Comparator<CloseableBlockingQueue<Ante>>() {
 					@Override public int compare(CloseableBlockingQueue<Ante> q, CloseableBlockingQueue<Ante> p) {
-					return _getStakes(q) - _getStakes(p);
+					return _getStakes(p) - _getStakes(q);
 				}
 			}
 		);
