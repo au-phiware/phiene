@@ -40,7 +40,7 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 			throws InterruptedException;
 
 	public int getStakes(CloseableBlockingQueue<? extends Ante> queue) {
-		return 0;
+		return 0; //TODO
 	}
 	
 	@Override
@@ -52,7 +52,7 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 				}
 			}
 		);
-		for (int i = 1; i < 100; i = PrimeFinder.nextPrime(i)) {
+		for (int i = 1; i < 4; i = PrimeFinder.nextPrime(i + 1)) {
 			CloseableBlockingQueue<Ante> q = newCategory(null);
 			stakes.put(q, i);
 			rv.add(q);
