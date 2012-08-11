@@ -3,7 +3,6 @@ package au.com.phiware.ga.processes;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -35,14 +34,23 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 		
 		try {
 			Collection<CloseableBlockingQueue<Ante>> categories = newCategories();
+			for (final CloseableBlockingQueue<Ante> q : categories)
+                results.add(transformer.submit(new Runnable() {
+                    public void run() {
+                        try {
+                            SegregableProcess.super.transformPopulation(q, out);
+                        } catch (RuntimeException e) {
+                            throw e;
+                        } catch (Exception e) {
+                            throw new TransformException(e);
+                        }
+                    }
+                }));
 			try {
 				for (;;) {
 					final Ante individual = in.take();
 					boolean segregated = false;
-					for (Iterator<CloseableBlockingQueue<Ante>> i = categories.iterator();
-							!segregated && i.hasNext();
-					) {
-						final CloseableBlockingQueue<Ante> cat = i.next();
+					for (final CloseableBlockingQueue<Ante> cat : categories)
 						if (segregated = shouldSegregate(individual, cat)) {
 							cat.preventClose();
 							feeder.submit(new Runnable() {
@@ -58,8 +66,8 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 									}
 								}
 							});
+							break;
 						}
-					}
 					if (!segregated) {
 						final CloseableBlockingQueue<Ante> q = newCategory(individual);
 						categories.add(q);
