@@ -32,8 +32,12 @@ public class CalculatorTest {
 			new Fertilization<Haploid<Calculator<Byte>>, Calculator<Byte>>() {},
 			new TicketedMeiosis<Calculator<Byte>>() {}
 		);
-		while (environment.getPopulation().size() < 1)
+		while (environment.getPopulation().size() < 2)
 			environment.addToPopulation(Genomes.initGenome(Calculator.newCalculator(Byte.class)));
+		for (Calculator<Byte> individual : environment.getPopulation())
+			Tickets.giveTickets(2, individual);
+		environment.evolve();
+		assertTrue(!environment.getPopulation().isEmpty());
 	}
 
 }
