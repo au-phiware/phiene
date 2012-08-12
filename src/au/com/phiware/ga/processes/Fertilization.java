@@ -81,6 +81,17 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 	                                    cursor++;
 	                                    return b & 0xFF;
 	                            }
+	                            public int read(byte[] a, int off, int len)
+	                                           throws IOException {
+	                            	int i = 0;
+	                            	while (i < len) {
+	                                    byte b = heritage[cursor % size][cursor / size];
+	                                    cursor++;
+	                                    i++;
+	                                    a[off + i] = (byte) (b & 0xFF);
+	                            	}
+	                            	return i;
+	                            }
                     		},
                     		size
                     	)
