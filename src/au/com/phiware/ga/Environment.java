@@ -39,7 +39,7 @@ public class Environment<Individual extends Container> {
 			Collections.addAll(this.population, population);
 		
 		if (firstProcess != null)
-			processes.add(firstProcess);
+			addProcess(firstProcess);
 	}
 
 	/**
@@ -72,13 +72,21 @@ public class Environment<Individual extends Container> {
 	public List<Process<? extends Container, ? extends Container>> getProcesses() {
 		return processes;
 	}
+	
+	@SuppressWarnings("unchecked")
+	protected boolean addProcess(Process<? extends Container, ? extends Container> process) {
+		boolean rv = processes.add(process);
+		if (process instanceof EnvironmentalProcess)
+			((EnvironmentalProcess<Individual>) process).didAddToEnvironment(this);
+		return rv;
+	}
 	/**
 	 * @param process to set as the first of this evolution.
 	 */
 	public void setFirstProcess(Process<? super Individual, ? extends Container> process) {
 		if (!processes.isEmpty())
 			throw new IllegalStateException("First process already set.");
-		this.processes.add(process);
+		addProcess(process);
 	}
 	/**
 	 * Adds the specified processes to the end of this evolution <em>in reverse order</em>.
@@ -105,12 +113,12 @@ public class Environment<Individual extends Container> {
 					throw new ClassCastException(postType.getName()+" cannot be cast to "+anteType.getName());
 				postType = AbstractProcess.actualPostType(process);
 
-				processes.add(process);
+				addProcess(process);
 			}
 			anteType = AbstractProcess.actualAnteType(lastProcess);
 			if (!anteType.isAssignableFrom(postType))
 				throw new ClassCastException(postType.getName()+" cannot be cast to "+anteType.getName());
-			processes.add(lastProcess);
+			addProcess(lastProcess);
 		} catch(RuntimeException e) {
 			while (processes.size() > priorSize)
 				processes.remove(priorSize);

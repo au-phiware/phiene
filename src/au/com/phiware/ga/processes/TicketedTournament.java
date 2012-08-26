@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import au.com.phiware.ga.Container;
+import au.com.phiware.ga.Environment;
+import au.com.phiware.ga.EnvironmentalProcess;
 import au.com.phiware.ga.Selection;
 import au.com.phiware.ga.TransformException;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
@@ -27,10 +29,11 @@ import cern.colt.map.PrimeFinder;
 
 public abstract class TicketedTournament<Ante extends Container, Post extends Container>
 		extends SegregableProcess<Ante, Post>
-		implements Selection<Ante, Post> {
+		implements Selection<Ante, Post>, EnvironmentalProcess<Post> {
 
 	private transient Map<CloseableBlockingQueue<? extends Ante>, Integer> stakes = new WeakHashMap<CloseableBlockingQueue<? extends Ante>, Integer>();
 	protected int numberOfParticipants;
+	private Environment<Post> environment;
 	
 	protected TicketedTournament(int numberOfParticipants) {
 		this.numberOfParticipants = numberOfParticipants;
@@ -139,5 +142,10 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 	
 	@Override public final Post transform(Ante individual) {
 		return null;
+	}
+	
+	@Override
+	public void didAddToEnvironment(Environment<Post> e) {
+		environment = e;
 	}
 }
