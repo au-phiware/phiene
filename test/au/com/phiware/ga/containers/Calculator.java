@@ -13,107 +13,20 @@ import au.com.phiware.math.ring.BitArithmetic;
 
 public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>>> {
 	enum Operation {
-		ZERO {
+		CLEAR {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				stack.push(arithmetic.zero());
+				stack.clear();
 			}
-		},
-		ADD {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.add(b, a));
-				}
-			}
-		},
-		NEGATE {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 0)
-					stack.push(arithmetic.negate(stack.pop()));
-			}
-		},
-		SUBTRACT {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.subtract(b, a));
-				}
-			}
-		},
-		MULTIPLY {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.multiply(b, a));
-				}
-			}
-		},
-		POW {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.pow(b, a));
-				}
-			}
-		},
-		ONE {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				stack.push(arithmetic.one());
-			}
-		},
-		MOD {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1 && !stack.peek().equals(arithmetic.zero())) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.mod(b, a));
-				}
-			}
-		},
-		OR {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.or(b, a));
-				}
-			}
-		},
-		AND {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.and(b, a));
-				}
-			}
-		},
-		NAND {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.nand(b, a));
-				}
-			}
-		},
-		XOR {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 1) {
-					V a = stack.pop(), b = stack.pop();
-					stack.push(arithmetic.xor(b, a));
-				}
-			}
-		},
-		NOT {
-			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				if (stack.size() > 0)
-					stack.push(arithmetic.not(stack.pop()));
-			}
+			@Override public char code() { return '∅'; }
 		},
 		MIN {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
 				if (stack.size() > 1) {
 					V a = stack.pop(), b = stack.pop();
 					stack.push(arithmetic.min(b, a));
-				}
 			}
+			}
+			@Override public char code() { return '<'; }
 		},
 		MAX {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
@@ -122,14 +35,121 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 					stack.push(arithmetic.max(b, a));
 				}
 			}
+			@Override public char code() { return '>'; }
 		},
-		CLEAR {
+		OR {
 			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
-				stack.clear();
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.or(b, a));
+				}
 			}
+			@Override public char code() { return '⋁'; }
+		},
+		AND {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.and(b, a));
+				}
+			}
+			@Override public char code() { return '⋀'; }
+		},
+		NAND {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.nand(b, a));
+				}
+			}
+			@Override public char code() { return '⊼'; }
+		},
+		XOR {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.xor(b, a));
+				}
+			}
+			@Override public char code() { return '⊻'; }
+		},
+		POW {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.pow(b, a));
+				}
+			}
+			@Override public char code() { return 'ⁿ'; }
+		},
+		MOD {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 1 && !stack.peek().equals(arithmetic.zero())) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.mod(b, a));
+				}
+			}
+			@Override public char code() { return '÷'; }
+		},
+		NOT {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 0)
+					stack.push(arithmetic.not(stack.pop()));
+			}
+			@Override public char code() { return '¬'; }
+		},
+		NEGATE {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 0)
+					stack.push(arithmetic.negate(stack.pop()));
+			}
+			@Override public char code() { return '⌐'; }
+		},
+		SUBTRACT {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.subtract(b, a));
+				}
+			}
+			@Override public char code() { return '-'; }
+		},
+		MULTIPLY {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.multiply(b, a));
+				}
+			}
+			@Override public char code() { return '×'; }
+		},
+		ADD {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				if (stack.size() > 1) {
+					V a = stack.pop(), b = stack.pop();
+					stack.push(arithmetic.add(b, a));
+				}
+			}
+			@Override public char code() { return '+'; }
+		},
+		ONE {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				stack.push(arithmetic.one());
+			}
+			@Override public char code() { return '1'; }
+		},
+		ZERO {
+			@Override public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {
+				stack.push(arithmetic.zero());
+			}
+			@Override public char code() { return '0'; }
 		};
 		
 		public <V extends Number> void execute(BitArithmetic<V> arithmetic, Deque<V> stack) {}
+		
+		public char code() {
+			return (char) ('0' + this.ordinal());
+		}
 	}
 	
 	private BitArithmetic<V> arithmetic;
@@ -156,12 +176,19 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 	
 	public static final int stepLimit = 1024;
 	private Deque<V> stack = new ArrayDeque<V>();
+	private transient int score;
+	private transient V lastTarget;
 	
 	public int calculate(V target) throws IOException {
 		int step = 0;
 		
 		while (!target.equals(stack.peek()) && stepLimit > step++)
 			nextInstruction().execute(arithmetic, stack);
+		
+		if (target.equals(stack.peek())) {
+			lastTarget = target;
+			score = step;
+		}
 		
 		return step;
 	}
@@ -202,5 +229,18 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 			instructions[i++] = ops[(b >>> 4) & 0xF];
 			instructions[i++] = ops[b & 0xF];
 		}
+	}
+
+	private transient String instructionString;
+	@Override
+	public String toString() {
+		if (instructionString == null) {
+			char[] instructionCode = new char[instructions.length];
+			int i = 0;
+			for (Operation op : instructions)
+				instructionCode[i++] = op.code();
+			instructionString = new String(instructionCode);
+		}
+		return String.format("%s%s",instructionString, (lastTarget == null ? "" : ("["+lastTarget+"^"+score+"]")));
 	}
 }
