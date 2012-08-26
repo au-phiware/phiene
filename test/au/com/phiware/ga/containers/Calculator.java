@@ -156,15 +156,13 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 
 	public static <V extends Number> Calculator<V> newCalculator(Class<V> elementType) {
 		try {
-			Calculator<V> rv = new Calculator<V>();
-			rv.arithmetic = ArithmeticFactory.getBitArithmetic(elementType);
-			return rv;
+			return new Calculator<V>(ArithmeticFactory.getBitArithmetic(elementType));
 		} catch (ClassNotFoundException e) {}
 		return null;
 	}
 	
 	@SuppressWarnings("unchecked")
-	public Calculator() throws ClassNotFoundException {
+	protected Calculator() throws ClassNotFoundException {
 		if (!Calculator.class.equals(this.getClass())) {
 			ParameterizedType superType = (ParameterizedType) this.getClass().getGenericSuperclass();
 			while (!Calculator.class.equals(superType.getRawType()))
@@ -174,7 +172,11 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 		}
 	}
 	
-	public static final int stepLimit = 1024;
+	 public Calculator(BitArithmetic<V> bitArithmetic) {
+		 arithmetic = bitArithmetic;
+	 }
+	
+	public static final int stepLimit = 999;
 	private Deque<V> stack = new ArrayDeque<V>();
 	private transient int score;
 	private transient V lastTarget;
@@ -197,7 +199,7 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 		return stack.peek();
 	}
 	
-	private Operation[] instructions = new Operation[0x100];
+	private Operation[] instructions = new Operation[0x200];
 	private int cursor = 0;
 
 	private Operation nextInstruction() {
