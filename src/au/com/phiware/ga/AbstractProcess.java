@@ -28,9 +28,12 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			throws InterruptedException {
 		final Ante individual = in.take();
 		return new Callable<Post>() {
+			@SuppressWarnings("unchecked")
 			public Post call() {
 				try {
-					return transform(individual);
+					Post rv = transform(individual);
+					Genomes.logTransform(rv, individual);
+					return rv;
 				} catch (RuntimeException e) {
 					throw e;
 				} catch (Exception e) {

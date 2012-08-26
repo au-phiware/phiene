@@ -97,6 +97,7 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
                     	)
                     ));
 
+                    Genomes.logTransform(newBorn, gametes);
                     return newBorn;
 				} catch (RuntimeException e) {
 					throw e;

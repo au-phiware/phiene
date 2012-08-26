@@ -18,10 +18,14 @@ import java.util.Map;
 import java.util.Random;
 import java.util.WeakHashMap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import au.com.phiware.ga.io.RandomInputStream;
 import au.com.phiware.math.bankers.Bankers;
 
 public final class Genomes {
+	public final static Logger treeLogger = LoggerFactory.getLogger("au.com.phiware.ga.Tree");
 	private static Map<Container, byte[]> genomes = Collections.synchronizedMap(new WeakHashMap<Container, byte[]>());
 	
 	static Bankers<Integer> byteBankers;
@@ -38,6 +42,20 @@ public final class Genomes {
 		} catch (ClassNotFoundException ignored) {}
 	}
 	
+	public static <Ante extends Container, Post extends Container> void logTransform(Post to, Collection<Ante> from) {
+		Container[] a = new Container[from.size()];
+		logTransform(to, from.toArray(a));
+	}
+	public static <Ante extends Container, Post extends Container> void logTransform(Post to, Ante... from) {
+		if (treeLogger.isInfoEnabled() && from.length > 0) {
+			StringBuilder msg = new StringBuilder();
+			int i = 0;
+			for (; i < from.length - 1; i++)
+				msg.append(String.format("%s~%08X+", toString(from[i]), from[i].hashCode()));
+			msg.append(String.format("%s~%08X=%s~%08X", toString(from[i]), from[i].hashCode(), toString(to), to.hashCode()));
+			treeLogger.info(msg.toString());
+		}
+	}
 	public static class DataOutputStream extends FilterOutputStream implements DataOutput {
 		private final java.io.DataOutputStream dataOut;
 

@@ -8,6 +8,7 @@ import java.util.concurrent.Future;
 
 import au.com.phiware.ga.AbstractProcess;
 import au.com.phiware.ga.Container;
+import au.com.phiware.ga.Genomes;
 import au.com.phiware.ga.TransformException;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
@@ -21,9 +22,12 @@ public abstract class RepeatableProcess<Ante extends Container, Post extends Con
 			this.individual = individual;
 		}
 		
+		@SuppressWarnings("unchecked")
 		public Post call() {
 			try {
-				return transform(individual);
+				Post rv = transform(individual);
+				Genomes.logTransform(rv, individual);
+				return rv;
 			} catch (RuntimeException e) {
 				throw e;
 			} catch (Exception e) {
