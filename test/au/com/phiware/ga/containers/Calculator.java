@@ -24,7 +24,7 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 				if (stack.size() > 1) {
 					V a = stack.pop(), b = stack.pop();
 					stack.push(arithmetic.min(b, a));
-			}
+				}
 			}
 			@Override public char code() { return '<'; }
 		},
@@ -184,7 +184,7 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 	public int calculate(V target) throws IOException {
 		int step = 0;
 		
-		while (!target.equals(stack.peek()) && stepLimit > step++)
+		while (!target.equals(stack.peek()) && ++step < stepLimit)
 			nextInstruction().execute(arithmetic, stack);
 		
 		if (target.equals(stack.peek())) {
@@ -226,8 +226,10 @@ public class Calculator<V extends Number> implements Ploid<Haploid<Calculator<V>
 	@Override
 	public void readGenome(DataInput in) throws IOException {
 		Operation[] ops = Operation.values();
+		byte[] read = new byte[instructions.length / 2];
+		in.readFully(read);
 		for (int i = 0; i < instructions.length;) {
-			byte b = in.readByte();
+			byte b = read[i / 2];
 			instructions[i++] = ops[(b >>> 4) & 0xF];
 			instructions[i++] = ops[b & 0xF];
 		}
