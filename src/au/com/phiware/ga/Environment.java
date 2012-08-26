@@ -10,15 +10,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
 public class Environment<Individual extends Container> {
+    private final ReentrantLock populationLock;
 	private Collection<Individual> population = new HashSet<Individual>();
+	private Collection<Individual> deaths = Collections.synchronizedCollection(new HashSet<Individual>());;
 	private List<Process<? extends Container, ? extends Container>> processes = new ArrayList<Process<? extends Container, ? extends Container>>();
 
 	private int generationCount = 0;
+	private ExecutorService executor;
 
 	public Environment() {
 		this(null, (Individual[]) null);
@@ -35,6 +40,8 @@ public class Environment<Individual extends Container> {
 	public Environment(
 			Process<? super Individual, ? extends Container> firstProcess,
 			Individual... population) {
+		populationLock = new ReentrantLock(false);
+
 		if (population != null)
 			Collections.addAll(this.population, population);
 		
@@ -46,7 +53,12 @@ public class Environment<Individual extends Container> {
 	 * @return the population
 	 */
 	public Collection<Individual> getPopulation() {
-		return population;
+		populationLock.lock();
+		try {
+			return new HashSet<Individual>(population);
+		} finally {
+			populationLock.unlock();
+		}
 	}
 
 	/**
@@ -54,7 +66,12 @@ public class Environment<Individual extends Container> {
 	 * @param member to add to the population
 	 */
 	public boolean addToPopulation(Individual member) {
-		return this.population.add(member);
+		populationLock.lock();
+		try {
+			return this.population.add(member);
+		} finally {
+			populationLock.unlock();
+		}
 	}
 
 	/**
@@ -138,6 +155,7 @@ public class Environment<Individual extends Container> {
 	public void evolve() throws TransformException {
 		if (population.isEmpty()) return;
 		
+		final Lock lock = populationLock;
 		final Collection<Individual> pop = population;
 		final CloseableBlockingQueue<? super Individual> feeder;
 		final CloseableBlockingQueue<? extends Individual> eater;
@@ -151,11 +169,15 @@ public class Environment<Individual extends Container> {
 		feeder = in = new ArrayCloseableBlockingQueue(bufferSize);
 		feedResult = executor.submit(new Runnable() {
 			public void run() {
+				lock.lock();
 				try {
 					for (Individual i : pop)
 						feeder.put(i);
 				}
 				catch (InterruptedException earlyExit) {}
+				finally {
+					lock.unlock();
+				}
 			}
 		});
 		
@@ -186,7 +208,16 @@ public class Environment<Individual extends Container> {
 				population.clear();
 			future.add(executor.submit(new Runnable() {
 				public void run() {
-					eater.drainTo(population);
+					Collection<Individual> buffer = new HashSet<Individual>(bufferSize);
+					while (!(eater.isClosed() && eater.isEmpty())) {
+						eater.drainTo(buffer, bufferSize);
+						lock.lock();
+						try {
+							pop.addAll(buffer);
+						} finally {
+							lock.unlock();
+						}
+					}
 					if (!Thread.interrupted()) {
 						assert(eater.isClosed());
 					}//else exit early
