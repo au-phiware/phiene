@@ -44,4 +44,9 @@ public class CalculatorTournament extends
 		});
 		return individuals;
 	}
+	
+	@Override
+	public Calculator<Byte> resign(Calculator<Byte> individual) {
+		return individual;
+	}
 }

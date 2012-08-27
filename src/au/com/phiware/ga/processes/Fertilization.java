@@ -1,6 +1,7 @@
 package au.com.phiware.ga.processes;
 
-import static au.com.phiware.ga.containers.Ploids.*;
+import static au.com.phiware.ga.containers.Ploids.getParents;
+import static au.com.phiware.ga.containers.Ploids.setParents;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -18,7 +19,6 @@ import au.com.phiware.ga.containers.Haploid;
 import au.com.phiware.ga.containers.Ploid;
 import au.com.phiware.ga.io.ChromosomeInputStream;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
-import au.com.phiware.util.concurrent.QueueClosedException;
 
 public abstract class Fertilization<Parent extends Haploid<? extends Individual>, Individual extends Ploid<Parent>>
 		extends SegregableProcess<Parent, Individual>
@@ -38,13 +38,7 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 				this.actualType = (Class<Individual>) actualType;
 			}
 			return this.actualType.newInstance();
-		} catch (InstantiationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IllegalAccessException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} catch (Exception e) {}
 		return null;
 	}
 
@@ -55,12 +49,8 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 		final int size = newBorn.getNumberOfParents();
 		final List<Parent> gametes = new ArrayList<Parent>(size);
 
-		in.drainTo(gametes, size);
-		if (Thread.interrupted()) // Did not drain enough or we need to get out of here
-			throw new InterruptedException();
-
-		if (in.isClosed())
-			throw new QueueClosedException();
+		if (drain(in, gametes, size) < size)
+			return nullTransformer;
 
 		return new Callable<Individual>() {
 			public Individual call() {
@@ -130,5 +120,9 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 	@Override
 	public final Individual transform(Parent individual) {
 		return null;
+	}
+	
+	public String getShortName() {
+		return "Fert"+super.getShortName();
 	}
 }

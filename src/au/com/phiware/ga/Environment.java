@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -73,14 +74,17 @@ public class Environment<Individual extends Container> {
 			populationLock.unlock();
 		}
 	}
-
-	/**
-	 * Returns <tt>true</tt> if the population should be clear during this environments evolve cycle, <tt>false</tt> otherwise.
-	 * Default implementation returns <tt>false</tt>.
-	 * @return <tt>true</tt> if the population should be clear during this environments evolve cycle, <tt>false</tt> otherwise.
-	 */
-	public boolean shouldFlushPopulation() {
-		return false;
+	
+	public void removeFromPopulation(Individual member) {
+		if (populationLock.tryLock()) {
+	  		try {
+				this.population.remove(member);
+			} finally {
+				populationLock.unlock();
+			}
+      	} else {
+    		deaths.add(member);
+      	}
 	}
 
 	/**
@@ -161,9 +165,9 @@ public class Environment<Individual extends Container> {
 		final CloseableBlockingQueue<? extends Individual> eater;
 		Future feedResult;
 		CloseableBlockingQueue in;
-		ExecutorService executor = Executors.newCachedThreadPool();
+		ExecutorService executor = getExecutor();
 		List<Future> future = new ArrayList<Future>();
-		int bufferSize = population.size() / 2 + 1;
+		final int bufferSize = population.size() / 2 + 1;
 
 		/* Begin feeding the queue that will become the input of the first process. */
 		feeder = in = new ArrayCloseableBlockingQueue(bufferSize);
@@ -171,8 +175,18 @@ public class Environment<Individual extends Container> {
 			public void run() {
 				lock.lock();
 				try {
-					for (Individual i : pop)
-						feeder.put(i);
+					for (Iterator iterator = pop.iterator(); iterator.hasNext();) {
+						Individual i = (Individual) iterator.next();
+						synchronized (deaths) {
+							if (deaths.contains(i)) {
+								deaths.remove(i);
+								iterator.remove();
+								i = null;
+							}
+						}
+						if (i != null)
+							feeder.put(i);
+					}
 				}
 				catch (InterruptedException earlyExit) {}
 				finally {
@@ -200,12 +214,12 @@ public class Environment<Individual extends Container> {
 			in = safeOut;
 		}
 		eater = in;
-		
+
 		try {
 			/* Gobble up the new population, after the feeder is fed. */
 			feedResult.get();
-			if (shouldFlushPopulation())
-				population.clear();
+			//population.clear(); // TODO: Check for Multigenerational containers
+
 			future.add(executor.submit(new Runnable() {
 				public void run() {
 					Collection<Individual> buffer = new HashSet<Individual>(bufferSize);
@@ -228,7 +242,9 @@ public class Environment<Individual extends Container> {
 			/* Block until all processes are finished, throw any exceptions encountered. */ 
 			for (Future result : future)
 				result.get();
+
 		} catch (InterruptedException earlyExit) {
+			setExecutor(null);
 			executor.shutdown();
 			try {
 				// Use generous time out, since a second interrupt may kill it
@@ -237,6 +253,7 @@ public class Environment<Individual extends Container> {
 			if (!executor.isTerminated())
 				executor.shutdownNow();
 		} catch (ExecutionException e) {
+			setExecutor(null);
 			executor.shutdownNow();
 			if (e.getCause() instanceof RuntimeException)
 				throw (RuntimeException) e.getCause();
@@ -248,6 +265,19 @@ public class Environment<Individual extends Container> {
 		++generationCount;
 	}
 	
+	public ExecutorService getExecutor() {
+		if (executor == null)
+			executor = Executors.newCachedThreadPool();
+		return executor;
+	}
+	public void setExecutor(ExecutorService executor) {
+		if (this.executor != executor) {
+			if (this.executor != null)
+				this.executor.shutdown();
+			this.executor = executor;
+		}
+	}
+
 	public void evolve(int generationCount) throws TransformException {
 		for (; generationCount > 0; generationCount--)
 			evolve();

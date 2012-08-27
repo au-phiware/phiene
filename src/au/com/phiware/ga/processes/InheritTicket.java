@@ -16,4 +16,8 @@ public class InheritTicket<Parent extends Ploid<?>, Individual extends Ploid<Par
 			transferTickets(1, p, individual);
 		return individual;
 	}
+	
+	public String getShortName() {
+		return "Tick"+super.getShortName();
+	}
 }

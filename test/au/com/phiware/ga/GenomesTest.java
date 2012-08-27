@@ -1,6 +1,8 @@
 package au.com.phiware.ga;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -1256,7 +1258,7 @@ public class GenomesTest {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	public void testGetGenomeFilter() throws IOException {
+	public void testGetGenomeFilter() throws Exception {
 		individual.bytes = phenome;
 		assertNotNull(Genomes.getGenomeFilters(individual, InverterOutputStream.class));
 		assertArrayEquals(invGenome, Genomes.getGenomeBytes(individual));

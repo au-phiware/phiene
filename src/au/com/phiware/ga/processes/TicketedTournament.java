@@ -7,17 +7,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import au.com.phiware.ga.Container;
 import au.com.phiware.ga.Environment;
@@ -41,6 +35,7 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 	
 	public abstract List<Post> compete(List<Ante> individuals)
 			throws InterruptedException;
+	public abstract Post resign(Ante individual);
 
 	public int getStakes(CloseableBlockingQueue<? extends Ante> queue) {
 		return 0; //TODO
@@ -76,68 +71,40 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 		return rv;
 	}
 
-	@Override public final Callable<Post> transformer(CloseableBlockingQueue<? extends Ante> in)
+	@Override
+	public final Callable<Post> transformer(final CloseableBlockingQueue<? extends Ante> in)
 			throws InterruptedException {
-		return null;
-	}
-	
-	protected List<Future<Post>> submitTransformers(final CloseableBlockingQueue<? extends Ante> in, final ExecutorService executor) throws InterruptedException {
-		List<Future<Post>> results = new LinkedList<Future<Post>>();
 		final int stakes = _getStakes(in);
-		for (;;) {
-			final List<Ante> individuals = new ArrayList<Ante>(numberOfParticipants);
-			if (in.drainTo(individuals, numberOfParticipants) != numberOfParticipants)
-				break;
-			
-			final Future<List<Post>> transformer = executor.submit(new Callable<List<Post>>() {
-				public List<Post> call() {
-					try {
-						List<Post> winners = compete(individuals);
-						Iterator<Post> i = winners.iterator();
-						if (i.hasNext()) {
-							Post winnerTakesAll = i.next();
-							while (i.hasNext())
-								transferTickets(stakes, i.next(), winnerTakesAll);
-						}
-						return winners;
-					} catch (RuntimeException e) {
-						throw e;
-					} catch (Exception e) {
-						throw new TransformException(e);
-					}
-				}
-			});
-			
-			for (int i = 0; i < numberOfParticipants; i++) {
-				final int index = i;
-				results.add(new Future<Post>() {
-					@Override public boolean cancel(boolean mayInterruptIfRunning) {
-						return transformer.cancel(mayInterruptIfRunning);
-					}
-					@Override public Post get() throws InterruptedException, ExecutionException {
-						List<Post> winners = transformer.get();
-						if (index < winners.size())
-							return winners.get(index);
-						return null;
-					}
-					@Override public Post get(long timeout, TimeUnit unit)
-							throws InterruptedException, ExecutionException, TimeoutException {
-						List<Post> winners = transformer.get(timeout, unit);
-						if (index < winners.size())
-							return winners.get(index);
-						return null;
-					}
-					@Override public boolean isCancelled() {
-						return transformer.isCancelled();
-					}
-					@Override public boolean isDone() {
-						return transformer.isDone();
-					}
-				});
-			}
-		}
+		final List<Ante> individuals = new ArrayList<Ante>(numberOfParticipants);
 		
-		return results;
+		if (drain(in, individuals, numberOfParticipants) < numberOfParticipants)
+			return nullTransformer;
+
+		return new Callable<Post>() {
+			public Post call() {
+				try {
+					Post winnerTakesAll = null;
+					List<Post> winners = compete(individuals);
+					Iterator<Post> i = winners.iterator();
+					Post loser;
+					if (i.hasNext()) {
+						winnerTakesAll = i.next();
+						while (i.hasNext()) {
+							transferTickets(stakes, loser = i.next(), winnerTakesAll);
+							if (getTickets(loser) == 0) {
+								i.remove();
+								environment.removeFromPopulation(loser);
+							}
+						}
+					}
+					return winnerTakesAll;
+				} catch (RuntimeException e) {
+					throw e;
+				} catch (Exception e) {
+					throw new TransformException(e);
+				}
+			}
+		};
 	}
 	
 	@Override public final Post transform(Ante individual) {
@@ -147,5 +114,9 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 	@Override
 	public void didAddToEnvironment(Environment<Post> e) {
 		environment = e;
+	}
+	
+	public String getShortName() {
+		return "Tour"+super.getShortName();
 	}
 }

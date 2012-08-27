@@ -47,6 +47,7 @@ public class ProcessTest {
 	@After public void tearDown() {
 		in = out = null;
 		individual = null;
+		executor.shutdown();
 	}
 
 	@Test(expected=UnsupportedOperationException.class)

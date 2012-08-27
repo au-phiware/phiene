@@ -39,16 +39,13 @@ public class MutationTest {
 		individual = null;
 	}
 
-	@SuppressWarnings({ "unchecked", "unused" })
 	@Test
 	public void testGetGenomeFilters() throws IOException {
-		OutputStream[] chain = Genomes.getGenomeFilters(individual, MutationOutputStream.class);
-		assertSame("Should return 3 OutputStream.", 3, chain.length);
-		ByteArrayOutputStream bytes = (ByteArrayOutputStream) chain[0];
-		MutationOutputStream mutator = (MutationOutputStream) chain[1];
-		DataOutput data = (DataOutput) chain[2];
-		assertNotNull(mutator);
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		MutationOutputStream mutator = new MutationOutputStream(bytes);
+		byte[] trans = Genomes.transformGenome(individual, bytes, mutator);
 		byte[] genome = Genomes.getGenomeBytes(individual);
+		assertArrayEquals("Should return 3 OutputStream.", genome, trans);
 		assertSame("Should mutate once for each byte.", 4, mutator.getMutationCount());
 		assertArrayEquals("Should agree.", genome, bytes.toByteArray());
 		for (byte b : genome)
@@ -74,7 +71,7 @@ public class MutationTest {
 					
 					if (mutator.getMutationCount() > 0)
 						Genomes.setGenomeBytes(individual, bytes.toByteArray());
-				} catch (IOException e) {
+				} catch (Exception e) {
 					throw new TransformException(e);
 				}
 				return individual;

@@ -11,7 +11,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UTFDataFormatException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -349,9 +353,32 @@ public final class Genomes {
 		return individual;
 	}
 	public static <Individual extends Container> Individual initGenome(Individual individual) throws IOException {
-		return initGenome(individual, new Random());
+		individual.readGenome(new java.io.DataInputStream(new ConstantInputStream()));
+		return individual;
 	}
-
+	static class ConstantInputStream extends FilterInputStream {
+		static Integer count = 1;
+		private Byte c;
+		protected ConstantInputStream()       { super(null); }
+		protected ConstantInputStream(byte c) { this(); this.c = c; }
+		
+		public int read() throws IOException {
+			if (c != null) return c;
+			try {
+				return count;
+			} finally {
+				count = byteBankers.next(count);
+			}
+		}
+		
+		public int read(byte[] b, int offset, int length) throws IOException {
+			for (int i = 0; i < length; i++)
+				b[offset + i] = c != null ? c : count.byteValue();
+			if (c == null) count = byteBankers.next(count);
+			return length;
+		}
+	}
+	
 	public static void setGenomeBytes(Container individual, byte[] bytes) throws IOException {
 		if (individual instanceof ByteContainer)
 			((ByteContainer) individual).setGenome(bytes);
@@ -382,25 +409,25 @@ public final class Genomes {
 	/*
 	 * Returns null is specified filter(s) does not define a public no-arg constructor or public constructor that accepts an OutputStream.
 	 */
-	public static OutputStream[] getGenomeFilters(Container from, Container to, Class<? extends FilterOutputStream>... filters) throws IOException {
+	public static OutputStream[] getGenomeFilters(Container self, Class<? extends FilterOutputStream>... filters) throws IOException, IllegalArgumentException, SecurityException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+		return getGenomeFilters(self, self, filters);
+	}
+	public static OutputStream[] getGenomeFilters(Container from, Container to, Class<? extends FilterOutputStream>... filters)
+			throws IOException, IllegalArgumentException, SecurityException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 		FilterOutputStream filtered = null;
 		List<OutputStream> filterList = new ArrayList<OutputStream>(filters.length + 2);
 		
-		try {
-			filterList.add(bytes);
-			for (Class<? extends FilterOutputStream> filter : filters) {
-				try {
-					filtered = filter.getConstructor(OutputStream.class).newInstance(filtered == null ? bytes : filtered);
-				} catch (Exception e) {
-					bytes = null;
-					filterList.clear();
-					filtered = filter.getConstructor().newInstance();
-				}
-				filterList.add(filtered);
+		filterList.add(bytes);
+		for (Class<? extends FilterOutputStream> filter : filters) {
+			try {
+				filtered = filter.getConstructor(OutputStream.class).newInstance(filtered == null ? bytes : filtered);
+			} catch (Exception e) {
+				bytes = null;
+				filterList.clear();
+				filtered = filter.getConstructor().newInstance();
 			}
-		} catch (Exception x) {
-			return null;
+			filterList.add(filtered);
 		}
 		DataOutputStream out = new DataOutputStream(filtered);
 		filterList.add(out);
@@ -414,7 +441,106 @@ public final class Genomes {
 		OutputStream[] a = new OutputStream[filterList.size()];
 		return filterList.toArray(a);
 	}
-	public static OutputStream[] getGenomeFilters(Container self, Class<? extends FilterOutputStream>... filters) throws IOException {
+	/*
+	 * 
+	 */
+	public static OutputStream[] getGenomeFilters(Container self, FilterOutputStream... filters) throws IOException, IllegalArgumentException, SecurityException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, NoSuchFieldException {
 		return getGenomeFilters(self, self, filters);
+	}
+	@SuppressWarnings({ "unchecked" })
+	public static OutputStream[] getGenomeFilters(Container from, Container to, FilterOutputStream... filters) throws IOException, SecurityException, NoSuchFieldException, IllegalArgumentException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+		ByteArrayOutputStream bytes = null;
+		FilterOutputStream filtered = null;
+		List<OutputStream> filterList = new ArrayList<OutputStream>(filters.length + 2);
+		int i = 0;
+		
+		filterList.add(bytes = new ByteArrayOutputStream());
+		
+		while (i < filters.length) {
+			FilterOutputStream filter = filters[i++];
+			Class<? extends FilterOutputStream> type = filter.getClass();
+			Class<?> enclosingClass = type.getEnclosingClass();
+			Object enclosingObject = null;
+			if (enclosingClass != null) {
+				for (Field field : type.getDeclaredFields())
+					if (field.getName().startsWith("this$") && field.getType().equals(enclosingClass)) {
+						field.setAccessible(true);
+						enclosingObject = field.get(filter);
+						break;
+					}
+			}
+			Constructor<? extends FilterOutputStream> preferredConstructor = null, defaultConstructor = null;
+			Class<?>[] params = null;
+			for (Constructor<?> constructor : type.getDeclaredConstructors()) {
+				params = constructor.getParameterTypes();
+				if (params.length == 0) {
+					defaultConstructor = (Constructor<? extends FilterOutputStream>) constructor;
+					defaultConstructor.setAccessible(true);
+				} else if (OutputStream.class.equals(params[params.length - 1])
+						&& (params.length == 1
+							|| (enclosingClass != null && enclosingClass.equals(params[0]))))
+					preferredConstructor = (Constructor<? extends FilterOutputStream>) constructor;
+				else if (params.length == 1
+						|| (enclosingClass != null && enclosingClass.equals(params[0])))
+					defaultConstructor = (Constructor<? extends FilterOutputStream>) constructor;
+				if (preferredConstructor != null) {
+					preferredConstructor.setAccessible(true);
+					break;
+				}
+			}
+			if (preferredConstructor != null) {
+				if (params.length == 1)
+					filtered = preferredConstructor.newInstance(filtered == null ? bytes : filtered);
+				else if (enclosingObject != null)
+					filtered = preferredConstructor.newInstance(enclosingObject, filtered == null ? bytes : filtered);
+			} else {
+				bytes = null;
+				filterList.clear();
+				if (defaultConstructor != null) {
+					params = defaultConstructor.getParameterTypes();
+					if (params.length == 0)
+						filtered = defaultConstructor.newInstance();
+					else
+						filtered = defaultConstructor.newInstance(enclosingObject);
+				}
+			}
+			filterList.add(filtered);
+		}
+		transferGenome(from, to, bytes, filtered);
+		OutputStream[] a = new OutputStream[filterList.size()];
+		return filterList.toArray(a);
+	}
+	/*
+	 * Writes <tt>from</tt>'s genome to <tt>out</tt> and sets the byte array of <tt>bytes</tt> as <tt>to</tt>'s genome. 
+	 */
+	public static byte[] transferGenome(Container from, Container to, ByteArrayOutputStream bytes, OutputStream filtered) throws IOException {
+		DataOutputStream out = new DataOutputStream(filtered);
+		from.writeGenome(out);
+		out.close();
+		byte[] rv = null;
+		if (bytes != null)
+			rv = bytes.toByteArray();
+		if (to != null)
+			setGenomeBytes(to, rv);
+		return rv;
+	}
+	public static byte[]
+			transformGenome(Container individual,
+							ByteArrayOutputStream bytes,
+							OutputStream filtered) throws IOException {
+		return transferGenome(individual, individual, bytes, filtered);
+	}
+	
+	public static String toString(Container container) {
+		byte[] bytes;
+		try {
+			bytes = getGenomeBytes(container);
+		} catch (IOException e) {
+			return "";
+		}
+		StringBuilder sb = new StringBuilder(bytes.length * 2);
+		for (byte b : bytes)
+			sb.append(Integer.toHexString((b & 0xFF) | 0x100).substring(1));
+		return sb.toString();
 	}
 }

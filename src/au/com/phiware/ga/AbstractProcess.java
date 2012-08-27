@@ -10,22 +10,30 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
 public abstract class AbstractProcess<Ante extends Container, Post extends Container> implements Process<Ante, Post> {
+	private static int threadPoolSize = 3;
+	protected ExecutorService sharedExecutor;
+	private Queue<ExecutorService> executorPool = new ConcurrentLinkedQueue<ExecutorService>();
+	
 	public abstract Post transform(Ante individual);
 	
-	public Callable<Post> transformer(CloseableBlockingQueue<? extends Ante> in)
-			throws InterruptedException {
+	public Callable<Post> transformer(final CloseableBlockingQueue<? extends Ante> in)
+			throws InterruptedException, TimeoutException {
 		final Ante individual = in.take();
 		return new Callable<Post>() {
 			@SuppressWarnings("unchecked")
@@ -46,15 +54,18 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 	protected List<Future<Post>> submitTransformers(final CloseableBlockingQueue<? extends Ante> in, final ExecutorService executor) throws InterruptedException {
 		List<Future<Post>> results = new LinkedList<Future<Post>>();
 		try {
-			for (;;) {
+			while (!in.isEmpty() || !in.isClosed()) {
 				Callable<Post> transformer = transformer(in);
 				
 				if (transformer == null)
 					throw new UnsupportedOperationException("Transformer expected");
 				
-				results.add(executor.submit(transformer));
+				if (transformer != nullTransformer)
+					results.add(executor.submit(transformer));
 			}
-		} catch (QueueClosedException expected) {}
+		}
+		catch (QueueClosedException expected) {}
+		catch (TimeoutException ok) {}
 		return results;
 	}
 	
@@ -63,7 +74,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			final CloseableBlockingQueue<? extends Ante> in,
 			final CloseableBlockingQueue<? super Post> out)
 					throws TransformException {
-		ExecutorService executor = Executors.newCachedThreadPool();
+		ExecutorService executor = takeSharedExecutor();
 		
 		try {
 			drainFutures(submitTransformers(in, executor), out);
@@ -81,28 +92,105 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 				dropCount = executor.shutdownNow().size();
 			
 			//dropCount += done count in results(?)
+		} finally {
+			giveExecutor(executor);
 		}
 	}
 	
+	public static int getThreadPoolSize() {
+		return threadPoolSize;
+	}
+
+	public static void setThreadPoolSize(int threadPoolSize) {
+		AbstractProcess.threadPoolSize = threadPoolSize;
+	}
+	
+	public ExecutorService newExecutor() {
+		return newExecutor(getThreadPoolSize());
+	}
+	
+	public ExecutorService newExecutor(int poolSize) {
+		if (poolSize > 0)
+			return Executors.newFixedThreadPool(poolSize, new DefaultThreadFactory());
+		else
+			return Executors.newCachedThreadPool(new DefaultThreadFactory());
+	}
+	public ExecutorService takeSharedExecutor() {
+		if (sharedExecutor == null)
+			sharedExecutor = takeExecutor();
+		return sharedExecutor;
+	}
+	public ExecutorService takeExecutor() {
+		ExecutorService executor = executorPool.poll();
+		if (executor == null)
+			executor = newExecutor();
+		return executor;
+	}
+	public void giveExecutor(ExecutorService executor) {
+		if (executor != null) {
+			if (executor.isShutdown()) {
+				if (sharedExecutor == executor)
+					sharedExecutor = null;
+			} else if (!executorPool.offer(executor))
+				executor.shutdown(); // Can't take it
+		}
+	}
+	private final AtomicInteger poolNumber = new AtomicInteger(1);
+    class DefaultThreadFactory implements ThreadFactory {
+        private final ThreadGroup group;
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+        private final String namePrefix;
+
+        DefaultThreadFactory() {
+            SecurityManager s = System.getSecurityManager();
+            group = (s != null)? s.getThreadGroup() :
+                                 Thread.currentThread().getThreadGroup();
+            namePrefix = getShortName() + "-" + poolNumber.getAndIncrement() + "-";
+        }
+
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(group, r,
+                                  namePrefix + threadNumber.getAndIncrement(),
+                                  0);
+            if (t.isDaemon())
+                t.setDaemon(false);
+            if (t.getPriority() != Thread.NORM_PRIORITY)
+                t.setPriority(Thread.NORM_PRIORITY);
+            return t;
+        }
+    }
+    private static final AtomicInteger procNumber = new AtomicInteger(1);
+    private final int myProcNumber = procNumber.getAndIncrement();
+	public String getShortName() {
+		return "Proc" + myProcNumber;
+	}
+
+	public final Callable<Post> nullTransformer = new Callable<Post>() {
+		public Post call() {
+			return null;
+		}
+	};
+
 	private static final Comparator<? super Future<?>> FUTURE_COMPARATOR = new Comparator<Future<?>>() {
 		public int compare(Future<?> a, Future<?> b) {
 			boolean done = a.isDone();
 			return done == b.isDone() ? 0 : (done ? -1 : 1);
 		}
 	};
-	protected static <T> void drainFutures(List<Future<T>> results, final CloseableBlockingQueue<? super T> out)
+	protected void drainFutures(List<Future<Post>> results, final CloseableBlockingQueue<? super Post> out)
 			throws InterruptedException {
 		while (!results.isEmpty()) {
 			Collections.sort(results, FUTURE_COMPARATOR);
 			try {
-				Iterator<Future<T>> i = results.iterator();
+				Iterator<Future<Post>> i = results.iterator();
 				while (i.hasNext()) {
 					try {
-						T t = i.next().get(5, TimeUnit.MILLISECONDS);
+						Post t = i.next().get(5, TimeUnit.MILLISECONDS);
 						i.remove();
-						if (out != null && 
-								t != null)
+						if (out != null && t != null) {
+							//logger.debug("Transformed to {}", t);
 							out.put(t);
+						}
 					} catch (ExecutionException e) {
 						//i.remove();
 						if (e.getCause() instanceof RuntimeException)
@@ -114,6 +202,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			} catch (TimeoutException sortAgain) {}
 		}
 	}
+
 	protected static void drainFutures(List<Future<?>> results)
 			throws InterruptedException {
 		while (!results.isEmpty()) {
@@ -149,7 +238,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			ParameterizedType paramType = (ParameterizedType) type;
 			Type rawType = paramType.getRawType();
 			assert rawType instanceof Class<?>;
-		
+			
 			if (Process.class.equals(rawType))
 				return paramType.getActualTypeArguments()[i];
 			

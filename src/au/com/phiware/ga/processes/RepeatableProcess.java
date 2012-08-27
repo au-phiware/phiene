@@ -85,5 +85,8 @@ public abstract class RepeatableProcess<Ante extends Container, Post extends Con
 	public boolean isTransformRepeated() {
 		return false;
 	}
-
+	
+	public String getShortName() {
+		return "Rep"+super.getShortName();
+	}
 }

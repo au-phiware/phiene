@@ -1,35 +1,22 @@
 package au.com.phiware.ga.processes;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Random;
 
-import au.com.phiware.ga.TransformException;
 import au.com.phiware.ga.Genomes;
+import au.com.phiware.ga.TransformException;
 import au.com.phiware.ga.Variation;
 import au.com.phiware.ga.containers.Haploid;
 import au.com.phiware.ga.containers.Ploid;
-import au.com.phiware.ga.io.MutationOutputStream;
+import au.com.phiware.ga.containers.Ploids;
+import au.com.phiware.ga.io.ChromosomeOutputStream;
 
-public abstract class Meiosis<Individual extends Ploid<?>> extends RepeatableProcess<Individual, Haploid<Individual>> implements Variation<Individual, Haploid<Individual>> {
-	private class CrossoverOutputStream extends au.com.phiware.ga.io.CrossoverOutputStream {
-		CrossoverOutputStream(OutputStream out) {
-			super(out, numberOfChromosomes(null));
-		}
-		
-		public double getCrossoverFrequency() {
-			return Meiosis.this.getCrossoverFrequency();
-		}
-		
-		public void setCrossoverFrequency(double crossoverFrequency) {
-			Meiosis.this.setCrossoverFrequency(crossoverFrequency);
-		}
-	}
-
+public abstract class Meiosis<Individual extends Ploid<Haploid<Individual>>> extends RepeatableProcess<Individual, Haploid<Individual>> implements Variation<Individual, Haploid<Individual>> {
 	private Random random;
-	private double crossoverFrequency;
+	private double crossoverFrequency = 0.002;
 	protected int numberOfChromosomes = 0;
 
 	@Override
@@ -72,10 +59,35 @@ public abstract class Meiosis<Individual extends Ploid<?>> extends RepeatablePro
 		Haploid<Individual> post = new Haploid<Individual>(ante);
 
 		try {
-			@SuppressWarnings({ "unchecked", "unused" })
-			OutputStream[] chain = Genomes.getGenomeFilters(ante, post,
-					CrossoverOutputStream.class, MutationOutputStream.class);
-		} catch (IOException e) {
+			List<Haploid<Individual>> parents = Ploids.getParents(ante);
+			if (!parents.isEmpty()) {
+				final byte[][] heritage = new byte[parents.size()][];
+				int genomeSize = 0;
+				int i = 0;
+				for (Haploid<Individual> parent : parents) {
+					heritage[i] = parent.getGenome();
+					if (genomeSize < heritage[i].length)
+						genomeSize = heritage[i].length;
+					i++;
+				}
+				final byte[] genome = new byte[genomeSize];
+				
+				Random random = getRandom();
+				int chroma = random.nextInt(heritage.length);
+				for (i = 0; i < heritage[0].length; i++) {
+					if (i > 0 && random.nextDouble() < getCrossoverFrequency())
+						chroma = (chroma + (heritage.length > 2 ? random.nextInt(heritage.length - 1) : 0) + 1) % heritage.length;
+					genome[i] = heritage[chroma][i]; //FIXME: ensure that i is valid for heritage[chroma]
+				}
+				
+				Genomes.setGenomeBytes(post, genome);
+			} else {
+				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+				Genomes.transferGenome(ante, post, bytes, new ChromosomeOutputStream(bytes));
+			}
+		} catch (RuntimeException e) {
+			throw e;
+		} catch (Exception e) {
 			throw new TransformException(e);
 		}
 
@@ -95,5 +107,8 @@ public abstract class Meiosis<Individual extends Ploid<?>> extends RepeatablePro
 			random = new Random();
 		return random;
 	}
-
+	
+	public String getShortName() {
+		return "Meio"+super.getShortName();
+	}
 }
