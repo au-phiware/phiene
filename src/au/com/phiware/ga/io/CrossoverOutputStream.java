@@ -43,7 +43,7 @@ public abstract class CrossoverOutputStream extends FilterOutputStream {
 			step = (step + (size > 2 ? random.nextInt(size - 1) : 0) + 1) % size;
 		}
 			
-		if (cursor % size == step)
+		if (cursor++ % size == step)
 			out.write(b);
 	}
 	

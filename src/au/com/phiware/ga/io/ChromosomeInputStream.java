@@ -68,8 +68,10 @@ public class ChromosomeInputStream extends FilterInputStream {
 			b <<= 4;
 			for (int i = 0; i < size; i++) {
 				if (s[j * size + i] == 0) {
-					if (!found) b &= ~0xF;
-					else found = true;
+					if (!found) {
+						b &= 0xF0;
+						found = true;
+					}
 					b |= clear[j * size + i];
 				} else if (!found)
 					b |= clear[j * size + i];
