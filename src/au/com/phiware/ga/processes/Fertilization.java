@@ -64,9 +64,9 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 
 		return new Callable<Individual>() {
 			public Individual call() {
+				final byte[][] heritage = new byte[size][];
+				
 				try {
-					final byte[][] heritage = new byte[size][];
-
 					setParents(newBorn, gametes);
                     
                     for (int i = 0; i < size; i++)
@@ -84,11 +84,11 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 	                            public int read(byte[] a, int off, int len)
 	                                           throws IOException {
 	                            	int i = 0;
-	                            	while (i < len) {
-	                                    byte b = heritage[cursor % size][cursor / size];
+	                            	byte b;
+	                            	while (i < len && off + i < a.length) {
+	                                    b = heritage[cursor % size][cursor / size];
 	                                    cursor++;
-	                                    i++;
-	                                    a[off + i] = (byte) (b & 0xFF);
+	                                    a[off + i++] = (byte) (b & 0xFF);
 	                            	}
 	                            	return i;
 	                            }
