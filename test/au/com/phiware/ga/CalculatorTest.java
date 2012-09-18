@@ -14,6 +14,7 @@ import au.com.phiware.ga.containers.Haploid;
 import au.com.phiware.ga.processes.CalculatorTournament;
 import au.com.phiware.ga.processes.Fertilization;
 import au.com.phiware.ga.processes.InheritTicket;
+import au.com.phiware.ga.processes.Mutation;
 import au.com.phiware.ga.processes.TicketedMeiosis;
 
 public class CalculatorTest {
@@ -39,6 +40,7 @@ public class CalculatorTest {
 					return Calculator.newCalculator(Byte.class);
 				}
 			},
+			new Mutation<Haploid<Calculator<Byte>>>() {},
 			new TicketedMeiosis<Calculator<Byte>>() {}
 		);
 		while (environment.getPopulation().size() < 0x10)
