@@ -17,9 +17,15 @@ public class ChromosomeOutputStream extends FilterOutputStream {
 		0b10101010,
 		0b01001011  */
 	};
+	private int size = 1;
 	
-	public ChromosomeOutputStream(OutputStream out) {
+	public ChromosomeOutputStream(OutputStream out, int size) {
 		super(out);
+		this.size = size;
+	}
+
+	public ChromosomeOutputStream(OutputStream out) {
+		this(out, 1);
 	}
 
 	@Override
@@ -31,8 +37,10 @@ public class ChromosomeOutputStream extends FilterOutputStream {
 			for (int x = 0, p = 1; x < G.length; x++, p <<= 1)
 				if ((p & clear[i]) != 0)
 					coded[i] ^= G[x];
-		
-		out.write(coded[0]);
-		out.write(coded[1]);
+
+		for (int i = 0; i < size; i++)
+			out.write(coded[0]);
+		for (int i = 0; i < size; i++)
+			out.write(coded[1]);
 	}
 }

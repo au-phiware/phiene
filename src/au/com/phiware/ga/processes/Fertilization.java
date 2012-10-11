@@ -67,16 +67,18 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
                     		new FilterInputStream(null) {
 	                            private int cursor = 0;
 	                            public int read() throws IOException {
-	                                    byte b = heritage[cursor % size][cursor / size];
+	                                    int c = cursor;
+	                                    byte b = heritage[c % size][c / size];
 	                                    cursor++;
 	                                    return b & 0xFF;
 	                            }
 	                            public int read(byte[] a, int off, int len)
 	                                           throws IOException {
+	                                int c = cursor;
 	                            	int i = 0;
 	                            	byte b;
 	                            	while (i < len && off + i < a.length) {
-	                                    b = heritage[cursor % size][cursor / size];
+	                                    b = heritage[c % size][c / size];
 	                                    cursor++;
 	                                    a[off + i++] = (byte) (b & 0xFF);
 	                            	}

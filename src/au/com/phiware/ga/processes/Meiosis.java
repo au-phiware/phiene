@@ -83,7 +83,7 @@ public abstract class Meiosis<Individual extends Ploid<Haploid<Individual>>> ext
 				Genomes.setGenomeBytes(post, genome);
 			} else {
 				ByteArrayOutputStream bytes = new ByteArrayOutputStream();
-				Genomes.transferGenome(ante, post, bytes, new ChromosomeOutputStream(bytes));
+				Genomes.transferGenome(ante, post, bytes, new ChromosomeOutputStream(bytes, post.getNumberOfParents()));
 			}
 		} catch (RuntimeException e) {
 			throw e;
