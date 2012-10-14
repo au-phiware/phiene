@@ -1,0 +1,26 @@
+{
+  "name": "phiware-ga-visualiser"
+, "description": "Visualizer for Phiware's genetic algorithm."
+, "author": "Corin Lawson <corin@phiware.com.au>"
+, "version": "0.0.1"
+, "private": true
+, "main": "app"
+, "scripts": {
+    "prestart": "coffee --compile public/scripts/*.coffee"
+  , "start": "coffee app"
+  }
+, "dependencies": {
+    "connect": "2.6"
+  , "express": "3.0"
+  , "jade": "0.27"
+  , "marked": "*"
+  , "mongoose": "3.3"
+  , "socket.io": "0.9"
+  }
+, "devDependencies": {
+    "vows": "0.6.x"
+  , "mocha": "*"
+  , "should": "*"
+  }
+, "engine": "node >= 0.6.15"
+}

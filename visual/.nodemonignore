@@ -1,0 +1,8 @@
+/test/*
+/public/*
+/views/*
+.*.sw*
+.gitignore
+Makefile
+config.json
+package.json
