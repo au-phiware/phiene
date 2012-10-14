@@ -16,6 +16,7 @@
   , "marked": "*"
   , "mongoose": "3.3"
   , "socket.io": "0.9"
+  , "lazy": "*"
   }
 , "devDependencies": {
     "vows": "0.6.x"
