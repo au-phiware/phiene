@@ -7,4 +7,6 @@ public interface Process<Ante extends Container, Post extends Container> {
 			final CloseableBlockingQueue<? extends Ante> in,
 			final CloseableBlockingQueue<? super Post> out)
 					throws TransformException;
+
+	public void shutdown();
 }

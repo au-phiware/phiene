@@ -289,6 +289,12 @@ public class Environment<Individual extends Container> {
 		}
 	}
 
+	public void shutdown() {
+		setExecutor(null);
+		for (@SuppressWarnings("rawtypes") Process process : processes)
+			process.shutdown();
+	}
+
 	public void evolve(int generationCount) throws TransformException {
 		for (; generationCount > 0; generationCount--)
 			evolve();

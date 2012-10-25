@@ -140,6 +140,15 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 				executor.shutdown(); // Can't take it
 		}
 	}
+	public void shutdown() {
+		sharedExecutor.shutdown();
+		sharedExecutor = null;
+		Iterator<ExecutorService> i = executorPool.iterator();
+		while (i.hasNext()) {
+			((ExecutorService) i.next()).shutdown();
+			i.remove();
+		}
+	}
 	private final AtomicInteger poolNumber = new AtomicInteger(1);
     class DefaultThreadFactory implements ThreadFactory {
         private final ThreadGroup group;
