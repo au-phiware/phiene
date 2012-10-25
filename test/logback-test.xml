@@ -11,7 +11,7 @@
     </encoder>
   </appender>
   
-  <logger name="au.com.phiware.ga.Tree" level="info" additivity="false" append="false">
-    <!--appender-ref ref="tree" /-->
+  <logger name="au.com.phiware.ga.Tree" level="warn" additivity="false" append="false">
+    <appender-ref ref="tree" />
   </logger>
 </configuration>
