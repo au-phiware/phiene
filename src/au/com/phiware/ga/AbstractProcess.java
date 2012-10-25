@@ -22,10 +22,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
 public abstract class AbstractProcess<Ante extends Container, Post extends Container> implements Process<Ante, Post> {
+	public final static Logger logger = LoggerFactory.getLogger("au.com.phiware.ga.Process");
 	private static int threadPoolSize = 3;
 	protected ExecutorService sharedExecutor;
 	private Queue<ExecutorService> executorPool = new ConcurrentLinkedQueue<ExecutorService>();
@@ -39,6 +43,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			@SuppressWarnings("unchecked")
 			public Post call() {
 				try {
+					LoggerFactory.getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}...", individual);
 					Post rv = transform(individual);
 					Genomes.logTransform(rv, individual);
 					return rv;

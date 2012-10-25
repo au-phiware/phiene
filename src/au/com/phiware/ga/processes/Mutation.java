@@ -27,4 +27,8 @@ public class Mutation<Individual extends Container> extends
 		return individual;
 	}
 
+	@Override
+	public String getShortName() {
+		return "Muta"+super.getShortName();
+	}
 }

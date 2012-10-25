@@ -14,10 +14,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
 public class Environment<Individual extends Container> {
+	public final static Logger logger = LoggerFactory.getLogger("au.com.phiware.ga.Environment");
+	public final static Logger pipeLogger = LoggerFactory.getLogger("au.com.phiware.ga.Pipe");
     private final ReentrantLock populationLock;
 	private Collection<Individual> population = new HashSet<Individual>();
 	private Collection<Individual> deaths = Collections.synchronizedCollection(new HashSet<Individual>());;
@@ -158,13 +163,14 @@ public class Environment<Individual extends Container> {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void evolve() throws TransformException {
 		if (population.isEmpty()) return;
+		logger.info("Evolve:{}", generationCount);
 		
 		final Lock lock = populationLock;
 		final Collection<Individual> pop = population;
 		final CloseableBlockingQueue<? super Individual> feeder;
 		final CloseableBlockingQueue<? extends Individual> eater;
 		Future feedResult;
-		CloseableBlockingQueue in;
+		ArrayCloseableBlockingQueue in;
 		ExecutorService executor = getExecutor();
 		List<Future> future = new ArrayList<Future>();
 		final int bufferSize = population.size() / 2 + 1;
@@ -179,13 +185,16 @@ public class Environment<Individual extends Container> {
 						Individual i = (Individual) iterator.next();
 						synchronized (deaths) {
 							if (deaths.contains(i)) {
+								logger.debug("Individual has decayed: {}", i);
 								deaths.remove(i);
 								iterator.remove();
 								i = null;
 							}
 						}
-						if (i != null)
+						if (i != null) {
+							logger.debug("Feeding: {}", i);
 							feeder.put(i);
+						}
 					}
 				}
 				catch (InterruptedException earlyExit) {}
@@ -197,11 +206,12 @@ public class Environment<Individual extends Container> {
 		
 		/* Chain the processes together and begin executing them. */
 		for (final Process process : processes) {
-			final CloseableBlockingQueue safeIn = in;
-			final CloseableBlockingQueue safeOut = new ArrayCloseableBlockingQueue<Container>(bufferSize);
+			final ArrayCloseableBlockingQueue safeIn = in;
+			final ArrayCloseableBlockingQueue safeOut = new ArrayCloseableBlockingQueue<Container>(bufferSize);
 			future.add(executor.submit(new Runnable() {
 				public void run() {
 					try {
+						pipeLogger.info("connect:{}:{}:{}", new Object[] {safeIn.uid, process, safeOut.uid});
 						process.transformPopulation(safeIn, safeOut);
 					} finally {
 						try {
@@ -224,7 +234,8 @@ public class Environment<Individual extends Container> {
 				public void run() {
 					Collection<Individual> buffer = new HashSet<Individual>(bufferSize);
 					while (!(eater.isClosed() && eater.isEmpty())) {
-						eater.drainTo(buffer, bufferSize);
+						int drained = eater.drainTo(buffer, bufferSize);
+						logger.info("Adding {} individuals to population", drained);
 						lock.lock();
 						try {
 							pop.addAll(buffer);

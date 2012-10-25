@@ -13,6 +13,8 @@ import java.util.TreeSet;
 import java.util.WeakHashMap;
 import java.util.concurrent.Callable;
 
+import org.slf4j.LoggerFactory;
+
 import au.com.phiware.ga.Container;
 import au.com.phiware.ga.Environment;
 import au.com.phiware.ga.EnvironmentalProcess;
@@ -82,6 +84,7 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 
 		return new Callable<Post>() {
 			public Post call() {
+				LoggerFactory.getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}, {}, {}...", individuals.toArray());
 				try {
 					Post winnerTakesAll = null;
 					List<Post> winners = compete(individuals);

@@ -6,6 +6,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import org.slf4j.LoggerFactory;
+
 import au.com.phiware.ga.AbstractProcess;
 import au.com.phiware.ga.Container;
 import au.com.phiware.ga.Genomes;
@@ -25,6 +27,7 @@ public abstract class RepeatableProcess<Ante extends Container, Post extends Con
 		@SuppressWarnings("unchecked")
 		public Post call() {
 			try {
+				LoggerFactory.getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}...", individual);
 				Post rv = transform(individual);
 				Genomes.logTransform(rv, individual);
 				return rv;
