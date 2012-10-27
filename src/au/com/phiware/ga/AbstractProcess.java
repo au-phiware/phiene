@@ -5,6 +5,8 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.lang.reflect.TypeVariable;
 import java.lang.reflect.WildcardType;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -215,6 +217,11 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 				}
 			} catch (TimeoutException sortAgain) {}
 		}
+	}
+
+	protected static void drainFutures(Collection<Future<?>> results)
+			throws InterruptedException {
+		drainFutures(new ArrayList<Future<?>>(results));
 	}
 
 	protected static void drainFutures(List<Future<?>> results)

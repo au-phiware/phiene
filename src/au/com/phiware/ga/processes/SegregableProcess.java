@@ -1,10 +1,10 @@
 package au.com.phiware.ga.processes;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -12,7 +12,6 @@ import java.util.concurrent.TimeUnit;
 import au.com.phiware.ga.AbstractProcess;
 import au.com.phiware.ga.Container;
 import au.com.phiware.ga.TransformException;
-import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
@@ -36,9 +35,17 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
             }
         }
 	}
-	
-	public abstract boolean shouldSegregate(Ante individual, CloseableBlockingQueue<Ante> queue)
+
+	public abstract CloseableBlockingQueue<Ante> segregateQueueFor(Ante individual)
 			throws InterruptedException;
+
+	public abstract Collection<CloseableBlockingQueue<Ante>> getQueues();
+
+	public void closeSegregateQueues() throws InterruptedException {
+		for (CloseableBlockingQueue<Ante> q : getQueues()) {
+			q.close();
+		}
+	};
 
 	protected int drain(final CloseableBlockingQueue<? extends Ante> from, final List<Ante> to, final int size)
 			throws InterruptedException, QueueClosedException {
@@ -59,42 +66,32 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 			final CloseableBlockingQueue<? extends Ante> in,
 			final CloseableBlockingQueue<? super Post> out)
 					throws TransformException {
-		List<Future<?>> results = new LinkedList<Future<?>>();
+		Map<CloseableBlockingQueue<Ante>, Future<?>> qMap = new HashMap<CloseableBlockingQueue<Ante>, Future<?>>();
 		ExecutorService transformer = newExecutor(0);
 		
 		try {
-			Collection<CloseableBlockingQueue<Ante>> categories = newCategories();
-			for (final CloseableBlockingQueue<Ante> q : categories)
-                results.add(transformer.submit(new SegregatedTransform(q, out)));
 			try {
 				ExecutorService feeder = takeExecutor();
 				try {
 					while (!in.isEmpty() || !in.isClosed()) {
 						final Ante individual = in.take();
-						boolean segregated = false;
-						for (final CloseableBlockingQueue<Ante> cat : categories) {
-							if (segregated = shouldSegregate(individual, cat)) {
-								cat.preventClose();
-								feeder.submit(new Runnable() {
-									public void run() {
-										try {
-											cat.put(individual);
-										} catch (RuntimeException e) {
-											throw e;
-										} catch (Exception e) {
-											throw new TransformException(e);
-										} finally {
-											cat.permitClose();
-										}
-									}
-								});
-								break;
+						final CloseableBlockingQueue<Ante> q = segregateQueueFor(individual);
+						if (q != null) {
+							if (!qMap.containsKey(q)) {
+								qMap.put(q, transformer.submit(new SegregatedTransform(q, out)));
 							}
-						}
-						if (!segregated) {
-							final CloseableBlockingQueue<Ante> q = newCategory(individual);
-							categories.add(q);
-							results.add(transformer.submit(new SegregatedTransform(q, out)));
+							q.preventClose();
+							feeder.submit(new Runnable() {
+								public void run() {
+									try {
+										q.put(individual);
+									} catch (Exception e) {
+										throw new TransformException(e);
+									} finally {
+										q.permitClose();
+									}
+								}
+							});
 						}
 					}
 				} finally {
@@ -102,10 +99,9 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 				}
 			} catch (QueueClosedException expected) {}
 			
-			for (CloseableBlockingQueue<? extends Ante> q : categories)
-				q.close();
+			closeSegregateQueues();
 
-			drainFutures(results);
+			drainFutures(qMap.values());
 			
 		} catch (InterruptedException earlyExit) {
 			@SuppressWarnings("unused")
@@ -126,16 +122,6 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 		}
 	}
 
-	protected CloseableBlockingQueue<Ante> newCategory(Ante individual) {
-		if (individual == null)
-			return new ArrayCloseableBlockingQueue<Ante>(0x10);
-		return new ArrayCloseableBlockingQueue<Ante>(0x10, false, Collections.singleton(individual));
-	}
-
-	protected Collection<CloseableBlockingQueue<Ante>> newCategories() {
-		return new HashSet<CloseableBlockingQueue<Ante>>();
-	}
-	
 	public String getShortName() {
 		return "Seg"+super.getShortName();
 	}

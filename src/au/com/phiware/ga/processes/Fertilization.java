@@ -8,8 +8,12 @@ import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import au.com.phiware.ga.Genomes;
@@ -18,6 +22,7 @@ import au.com.phiware.ga.Transmission;
 import au.com.phiware.ga.containers.Haploid;
 import au.com.phiware.ga.containers.Ploid;
 import au.com.phiware.ga.io.ChromosomeInputStream;
+import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
 public abstract class Fertilization<Parent extends Haploid<? extends Individual>, Individual extends Ploid<Parent>>
@@ -100,23 +105,45 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 		};
 	}
 
+	private transient Set<CloseableBlockingQueue<Parent>> queues = new HashSet<CloseableBlockingQueue<Parent>>();
 	@Override
-	public boolean shouldSegregate(Parent individual, CloseableBlockingQueue<Parent> in)
+	public Collection<CloseableBlockingQueue<Parent>> getQueues() {
+		return queues;
+	}
+
+	@Override
+	public void closeSegregateQueues() throws InterruptedException {
+		super.closeSegregateQueues();
+		queues.retainAll(Collections.emptySet());
+	}
+
+	@Override
+	public CloseableBlockingQueue<Parent> segregateQueueFor(Parent individual)
 			throws InterruptedException {
 		Individual parent, inlaw;
+		CloseableBlockingQueue<Parent> in = null;
 
 		parent = individual.getParent();
 		if (parent != null) {
-			List<Parent> parents = getParents(parent);
-			for (Parent peer : in) {
-				if ((inlaw = peer.getParent()) != null) {
-					if (parent == inlaw || !Collections.disjoint(parents, getParents(inlaw)))
-						return false;
+			Iterator<CloseableBlockingQueue<Parent>> i = queues.iterator();
+			searchQueues: while (i.hasNext()) {
+				in = i.next();
+				List<Parent> parents = getParents(parent);
+				for (Parent peer : in) {
+					if ((inlaw = peer.getParent()) != null) {
+						if (parent == inlaw || !Collections.disjoint(parents, getParents(inlaw)))
+							continue searchQueues;
+					}
 				}
+				break;
 			}
 		}
+		if (in == null) {
+			in = new ArrayCloseableBlockingQueue<Parent>(0x10);
+			queues.add(in);
+		}
 
-		return true;
+		return in;
 	}
 	
 	@Override
