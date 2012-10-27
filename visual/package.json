@@ -6,22 +6,30 @@
 , "private": true
 , "main": "app"
 , "scripts": {
-    "prestart": "coffee --compile public/scripts/*.coffee"
-  , "start": "coffee app"
+    "prestart": "./node_modules/.bin/coffee --compile public/scripts/*.coffee"
+  , "start": "./node_modules/.bin/coffee app"
+  , "test": "./node_modules/.bin/mocha --require should --reporter list --slow 20 --growl test/*.coffee"
+  , "clean": "git clean -fx"
+  , "prewatch": "./node_modules/.bin/coffee --compile --watch public/scripts &"
+  , "watch": "./node_modules/.bin/nodemon app.coffee"
   }
 , "dependencies": {
     "connect": "2.6"
-  , "express": "3.0"
-  , "jade": "0.27"
+  , "express": "3.0.0rc5"
+  , "jade": "*"
+  , "stylus": "*"
+  , "nib": "*"
+  , "coffee-script": "*"
   , "marked": "*"
-  , "mongoose": "3.3"
-  , "socket.io": "0.9"
+  , "mongoose": "*"
+  , "socket.io": "*"
   , "lazy": "*"
   }
 , "devDependencies": {
     "vows": "0.6.x"
   , "mocha": "*"
   , "should": "*"
+  , "nodemon": "*"
   }
 , "engine": "node >= 0.6.15"
 }

@@ -1,6 +1,10 @@
 extends layout
 
 block content
-  div
-    a(id='sender')='Send a Message'
-    ul(id='receiver')
+  article
+    svg(width=480, height=480, id='pipeline')
+    section
+      div
+        button Pause
+        input(type='checkbox', id='stepthru')
+        label(for='stepthru') Step

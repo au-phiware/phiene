@@ -1,5 +1,36 @@
+selection(colour, shadow)
+  &::selection
+    background   colour
+    text-shadow  shadow
+  &::-moz-selection
+    background   colour
+    text-shadow  shadow
+
+container(colour)
+  fill           colour
+  fill-opacity   0.681
+  stroke         colour
+  stroke-width   1.5px
+  selection      invert(colour) none
+
 circle.FuzzyParticipantContainer
-  fill: skyblue
-  fill-opacity: 0.681
-  stroke: steelblue
-  stroke-width: 1.5px
+  container      steelblue
+
+circle.Haploid
+  container      crimson
+
+circle.Process
+  stroke         lime
+  stroke-width   3px
+
+circle
+  stroke         none
+
+svg
+  fill           none
+  stroke         black
+  *
+    transition   all 200ms
+
+article
+  text-align     center

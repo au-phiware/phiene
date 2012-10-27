@@ -5,13 +5,43 @@ http = require 'http'
 server = http.createServer app
 io = require 'socket.io'
 io = io.listen server
+stylus = require 'stylus'
+nib = require 'nib'
 routes = require './routes'
 sockets = require './sockets'
-port =  process.env.PORT || 3000
+path = require 'path'
+join = path.join
+
+css_compile = (styl, file) ->
+  stylus styl,
+    filename: path
+    paths: [
+      join __dirname, 'public', 'styles'
+      join __dirname, 'public', 'vendor', 'styles'
+    ]
+    compress: true
+  .import('nib')
+  .use nib()
+
+#app.configure 'development', ->
+css_compile = (styl, file) ->
+  stylus styl,
+    filename: path
+    paths: [
+      join __dirname, 'public', 'styles'
+      join __dirname, 'public', 'vendor', 'styles'
+    ]
+    compress: false
+    warn: true
+    #linenos: true
+    #firebug: true
+  .import('nib')
+  .use nib()
 
 # Setup Express
 app.configure ->
-  app.set 'views', __dirname + '/views'
+  app.set 'port', process.env.PORT or 3000
+  app.set 'views', join __dirname, 'views'
   app.set 'view engine', 'jade'
   app.set 'view options', layout: false
   #app.use express.favicon()
@@ -21,11 +51,16 @@ app.configure ->
   #app.use express.cookieParser 'your secret here'
   #app.use express.session()
   app.use app.router
-  app.use express.static __dirname + '/public'
+  app.use stylus.middleware
+    src: join __dirname, 'public'
+    compile: css_compile
 
-# Setup the errors
 app.configure 'development', ->
-  app.use express.errorHandler
+  app.use express.logger 'dev'
+  app.use express.errorHandler dumpExceptions: true, showStack: true
+
+app.use express.static join __dirname, 'public'
+
 ###
 app.configure function {
 app.error function err, req, res, next{
@@ -47,6 +82,7 @@ app.error function err, req, res, next{
   }
 }
 ###
+
 # Setup Socket.IO
 io.sockets.on 'connection', sockets.index
 
@@ -55,5 +91,6 @@ app.get '/', routes.index
 app.get '/500', routes.error
 #app.get '/*', routes.notfound
 
-server.listen port
-console.log 'Listening on http://localhost:' + port
+port = app.get 'port'
+server.listen port, ->
+  console.log "Express #{app.get 'env'} server listening on port #{port}"

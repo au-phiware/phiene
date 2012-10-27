@@ -7,9 +7,10 @@ html.no-js
     meta(name="description", content=description)
     meta(name="author", content=author)
     meta(name="viewport", content='width=device-width')
-    link(rel='stylesheet', href='styles/normalize.css')
+    link(rel='stylesheet', href='/vendor/styles/normalize.css')
+    link(rel='stylesheet', href='/vendor/styles/boilerplate.css')
     link(rel='stylesheet', href='styles/main.css')
-    script(src='/scripts/vendor/modernizr.js')
+    script(src='/vendor/scripts/modernizr.js')
   body
 
     block header
@@ -20,7 +21,8 @@ html.no-js
       footer
         script(src='//ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js')
         script
-          window.jQuery || document.write('<script src="scripts/vendor/jquery-1.8.2.min.js"><\\/script>')
+          window.jQuery || document.write('<script src="/vendor/scripts/jquery-1.8.2.min.js"><\\/script>')
+        script(src='/vendor/scripts/d3.v2.min.js')
         script(src='scripts/plugins.js')
         script(src='scripts/main.js')
         script(defer, src='/socket.io/socket.io.js')
