@@ -213,6 +213,13 @@ public class Environment<Individual extends Container> {
 					try {
 						pipeLogger.info("connect:{}:{}:{}", new Object[] {safeIn.uid, process, safeOut.uid});
 						process.transformPopulation(safeIn, safeOut);
+					} catch (RuntimeException e) {
+						// Something went wrong with process, force close on queue
+						// in order to bubble exception up pipeline
+						try {
+							safeIn.close();
+						} catch (InterruptedException earlyExit) {}
+						throw e;
 					} finally {
 						try {
 							safeOut.close();
@@ -291,7 +298,7 @@ public class Environment<Individual extends Container> {
 
 	public void shutdown() {
 		setExecutor(null);
-		for (@SuppressWarnings("rawtypes") Process process : processes)
+		for (Process<?, ?> process : processes)
 			process.shutdown();
 	}
 
