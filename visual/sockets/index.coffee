@@ -34,10 +34,15 @@ sockets.index = (socket) ->
 
         switch cat
           when 'Pipe'
-            data.in   = rest[0]
-            data.out  = rest[2]
-            data.proc = rest[1]
-            data.op = 'join'
+            switch data.op
+              when 'connect'
+                data.in   = rest[0]
+                data.out  = rest[2]
+                data.proc = rest[1]
+                data.op = 'join'
+              when 'die'
+                i = (rest[0].replace /^.*[.]/, '').split '@'
+                data.data = uid:i[1]
 
           when 'ArrayCloseableBlockingQueue'
             data.data = rest[1]

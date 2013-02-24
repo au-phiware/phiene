@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import au.com.phiware.ga.ByteContainer;
+import au.com.phiware.ga.Environment;
 
 import cern.colt.list.ByteArrayList;
 
@@ -59,5 +60,11 @@ public abstract class AbstractByteContainer implements ByteContainer {
 					genome.add(in.readByte());
 			} catch(EOFException ok) {}
 		}
+	}
+
+	@Override
+	protected void finalize() throws Throwable {
+		Environment.pipeLogger.info("die:{}", this);
+		super.finalize();
 	}
 }

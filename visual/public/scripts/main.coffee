@@ -2,6 +2,9 @@
 
 @exports ?= window
 
+exports.links =
+links = {}
+
 class ManagedObject
   @getInstances = ->
     $.map this, (o) => if o instanceof this then o else null
@@ -33,6 +36,9 @@ class Individual extends ManagedObject
     else super o
 
   sendTo: (dest) ->
+    unless links["#{@locationi?.uid or 'main'}+#{dest.uid}"]
+      links["#{@location?.uid or 'main'}+#{dest.uid}"] = source:(@location or Process.get 'main'), target:dest
+
     switch dest.constructor
       when Pipe
         @location = dest
@@ -62,9 +68,15 @@ class Feedable extends ManagedObject
     feeders = []
 
     for sub in Feedable.subclasses
-      feeders.concat sub.getInstances().filter (f)=>
+      feeders = feeders.concat sub.getInstances().filter (f)=>
         this in f.feedees
     feeders
+
+  @getAllInstances = ->
+    instances = []
+    for sub in Feedable.subclasses
+      instances = instances.concat sub.getInstances()
+    instances
 
 exports.Process =
 class Process extends Feedable
@@ -88,28 +100,45 @@ class Pipe extends Feedable
   close: (@closed = true) ->
 
 $ ->
-  exports.vis =
-  vis = d3.select('svg#pipeline')
-
-  exports.layout =
-  layout = d3.layout.pack()
-    .size([(vis.attr 'width'), (vis.attr 'height')])
-    .padding(1.5)
-    .sort(null)
-    #.sort (a, b) ->
-    #  b.tick - a.tick
-    .children (d) ->
-      d.values
-    .value (d) -> d.values?.length or 1
-
-  exports.circles =
-  circles = vis
-    .append('g')
-    .selectAll('circle')
+  exports.pipeline =
+  pipeline = d3.select('svg#pipeline')
 
   exports.objects =
   objects = d3.nest().key (d) ->
     d.location?.uid
+  map = objects.map Individual.getInstances().reverse()
+
+  exports.layout =
+  layout = d3.layout.pack()
+    .size([(pipeline.attr 'width'), (pipeline.attr 'height')])
+    .padding(1.5)
+    .sort(null)
+    #.sort (a, b) ->
+    #  b.tick - a.tick
+    .value (d) -> d.children?.length or 1
+  layout = layout
+    .children (d) ->
+      d.values
+  layout = layout
+    .children (d) ->
+      switch d.constructor
+        when Process
+          pipes = Pipe.getInstances().filter (p)-> p.owner == d
+          for p in pipes
+            p.children = p.feedees
+          (
+            (
+              d.feedees if d.feedees.every (p)-> p instanceof Process
+            ) or []
+          ).concat(pipes)
+          .concat (map[d.uid] or [])
+        when Pipe
+          (d.children or []).concat (map[d.uid] or [])
+
+  exports.circles =
+  circles = pipeline
+    .append('g')
+    .selectAll('circle')
 
   key = (d) -> d.uid or d.key
   attrs =
@@ -123,8 +152,10 @@ $ ->
         (d.location?.constructor.name or '')
   exports.redraw =
   redraw = () ->
+    map = objects.map Individual.getInstances().reverse()
     exports.nodes =
-    nodes = layout.nodes {
+    nodes = layout.nodes Process.main
+    {
       key:'universe'
       values:objects.entries Individual.getInstances().reverse()
     }
@@ -138,6 +169,9 @@ $ ->
       .text key
     circles.exit()
       .remove()
+
+  exports.processes =
+  processes = d3.select('svg#processes')
 
   class Protocol
     socket = io.connect()
@@ -183,6 +217,10 @@ $ ->
       redraw()
     socket.on 'drain', @take
     socket.on 'take', @take
+
+    @die = (pkt) ->
+      $('button').click() if $('#stepthru').attr 'checked'
+      Individual.remove pkt.data
 
     @pause = ->
       socket.emit 'pause'
