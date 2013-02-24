@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="javadoc">
+    <target name="javadoc">
+        <javadoc access="public" author="true" 
+            classpath="../colt/lib/concurrent.jar:../colt/build/classes:/Users/corin/Library/Java/slf4j/slf4j-1.6.4/slf4j-api-1.6.4.jar"
+                destdir="doc" windowtitle="Phiware Javadoc"
+        	nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false"
+        	packagenames="au.com.phiware.*"
+        	source="1.6"
+                splitindex="false" use="true" version="true">
+            <link href="http://docs.oracle.com/javase/6/docs/api/"/>
+            <fileset dir="src" casesensitive="yes"/>
+            <fileset dir="../util/src" casesensitive="yes"/>
+            <fileset dir="../Bankers/bankers/java/src" casesensitive="yes">
+                <exclude name="**/*Benchmark*"/>
+            </fileset>
+        </javadoc>
+    </target>
+</project>

@@ -68,7 +68,6 @@ public class Environment<Individual extends Container> {
 	}
 
 	/**
-	 * @param <I>
 	 * @param member to add to the population
 	 */
 	public boolean addToPopulation(Individual member) {
