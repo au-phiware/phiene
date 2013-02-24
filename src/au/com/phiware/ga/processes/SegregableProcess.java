@@ -73,7 +73,7 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 			try {
 				ExecutorService feeder = takeExecutor();
 				try {
-					while (!in.isEmpty() || !in.isClosed()) {
+					while (!in.isClosed() || !in.isEmpty()) {
 						final Ante individual = in.take();
 						final CloseableBlockingQueue<Ante> q = segregateQueueFor(individual);
 						if (q != null) {
