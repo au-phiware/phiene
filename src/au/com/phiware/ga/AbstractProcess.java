@@ -126,6 +126,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 		else
 			return Executors.newCachedThreadPool(new DefaultThreadFactory());
 	}
+	@Override
 	public ExecutorService takeSharedExecutor() {
 		if (sharedExecutor == null)
 			sharedExecutor = takeExecutor();

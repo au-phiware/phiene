@@ -211,7 +211,7 @@ public class Environment<Individual extends Container> {
 		for (final Process process : processes) {
 			final ArrayCloseableBlockingQueue safeIn = in;
 			final ArrayCloseableBlockingQueue safeOut = new ArrayCloseableBlockingQueue<Container>(bufferSize);
-			future.add(executor.submit(new Runnable() {
+			future.add(process.takeSharedExecutor().submit(new Runnable() {
 				public void run() {
 					try {
 						pipeLogger.info("connect:{}:{}:{}", new Object[] {safeIn.uid, process, safeOut.uid});

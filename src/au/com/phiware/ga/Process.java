@@ -1,5 +1,7 @@
 package au.com.phiware.ga;
 
+import java.util.concurrent.ExecutorService;
+
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
 /**
@@ -11,6 +13,8 @@ public interface Process<Ante extends Container, Post extends Container> {
 			final CloseableBlockingQueue<? extends Ante> in,
 			final CloseableBlockingQueue<? super Post> out)
 					throws TransformException;
+
+	public ExecutorService takeSharedExecutor();
 
 	public void shutdown();
 }
