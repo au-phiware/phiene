@@ -7,6 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public final class Ploids {
 	@SuppressWarnings("rawtypes")
 	private static Map<Ploid, Ploid[]> parents = Collections.synchronizedMap(new WeakHashMap<Ploid, Ploid[]>());;

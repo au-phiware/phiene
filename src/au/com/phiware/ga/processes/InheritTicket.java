@@ -7,6 +7,10 @@ import au.com.phiware.ga.AbstractProcess;
 import au.com.phiware.ga.Transmission;
 import au.com.phiware.ga.containers.Ploid;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class InheritTicket<Parent extends Ploid<?>, Individual extends Ploid<Parent>>
 		extends AbstractProcess<Individual, Individual>
 		implements Transmission<Individual, Individual> {

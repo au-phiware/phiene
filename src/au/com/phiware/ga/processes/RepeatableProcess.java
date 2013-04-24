@@ -15,6 +15,10 @@ import au.com.phiware.ga.TransformException;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public abstract class RepeatableProcess<Ante extends Container, Post extends Container> extends
 		AbstractProcess<Ante, Post> {
 	private class Repeatable implements Callable<Post> {

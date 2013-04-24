@@ -24,6 +24,10 @@ import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import cern.colt.map.PrimeFinder;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public abstract class TicketedTournament<Ante extends Container, Post extends Container>
 		extends SegregableProcess<Ante, Post>
 		implements Selection<Ante, Post>, EnvironmentalProcess<Post> {

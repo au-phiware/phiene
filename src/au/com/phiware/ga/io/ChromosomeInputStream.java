@@ -6,6 +6,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class ChromosomeInputStream extends FilterInputStream {
 	static final int[] H = {
 		0x1, 0xF, 0x7, 0xB, 0x3, 0xD, 0x5, 0x9

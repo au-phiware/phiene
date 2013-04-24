@@ -5,8 +5,8 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * @author Corin Lawson <me@corinlawson.com.au>
  *
+ * @author Corin Lawson <corin@phiware.com.au>
  */
 public interface Container {
 	void writeGenome(DataOutput out)

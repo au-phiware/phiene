@@ -4,6 +4,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public final class Tickets {
 	private static Map<Container, Integer> tickets = Collections.synchronizedMap(new WeakHashMap<Container, Integer>());
 

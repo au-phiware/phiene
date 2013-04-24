@@ -14,6 +14,10 @@ import au.com.phiware.ga.containers.Ploid;
 import au.com.phiware.ga.containers.Ploids;
 import au.com.phiware.ga.io.ChromosomeOutputStream;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public abstract class Meiosis<Individual extends Ploid<Haploid<Individual>>> extends RepeatableProcess<Individual, Haploid<Individual>> implements Variation<Individual, Haploid<Individual>> {
 	private Random random;
 	private double crossoverFrequency = 0.002;

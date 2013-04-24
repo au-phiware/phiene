@@ -20,6 +20,10 @@ import org.slf4j.LoggerFactory;
 import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class Environment<Individual extends Container> {
 	public final static Logger logger = LoggerFactory.getLogger("au.com.phiware.ga.Environment");
 	public final static Logger pipeLogger = LoggerFactory.getLogger("au.com.phiware.ga.Pipe");

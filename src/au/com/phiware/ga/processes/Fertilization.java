@@ -25,6 +25,10 @@ import au.com.phiware.ga.io.ChromosomeInputStream;
 import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public abstract class Fertilization<Parent extends Haploid<? extends Individual>, Individual extends Ploid<Parent>>
 		extends SegregableProcess<Parent, Individual>
 		implements Transmission<Parent, Individual> {

@@ -1,5 +1,9 @@
 package au.com.phiware.ga;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class TransformException extends RuntimeException {
 	private static final long serialVersionUID = 8630990452096723074L;
 	private Container individual;

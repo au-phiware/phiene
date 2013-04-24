@@ -5,6 +5,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Random;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class MutationOutputStream extends FilterOutputStream {
 	static double defaultMutationFrequency = 0.0001;
 	private double mutationFrequency = defaultMutationFrequency;

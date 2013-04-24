@@ -4,6 +4,10 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class ChromosomeOutputStream extends FilterOutputStream {
 	static int[] G = {
 		0xD2, 0x55, 0x99, 0xE1

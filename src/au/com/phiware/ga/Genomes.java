@@ -28,6 +28,10 @@ import org.slf4j.LoggerFactory;
 import au.com.phiware.ga.io.RandomInputStream;
 import au.com.phiware.math.bankers.Bankers;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public final class Genomes {
 	public final static Logger treeLogger = LoggerFactory.getLogger("au.com.phiware.ga.Tree");
 	private static Map<Container, byte[]> genomes = Collections.synchronizedMap(new WeakHashMap<Container, byte[]>());

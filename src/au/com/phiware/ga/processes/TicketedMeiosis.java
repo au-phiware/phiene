@@ -4,6 +4,10 @@ import au.com.phiware.ga.Tickets;
 import au.com.phiware.ga.containers.Haploid;
 import au.com.phiware.ga.containers.Ploid;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class TicketedMeiosis<Individual extends Ploid<Haploid<Individual>>> extends Meiosis<Individual> {
 	@Override
 	public int getRepeatCount(Individual individual) {

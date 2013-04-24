@@ -9,8 +9,12 @@ import au.com.phiware.ga.Genomes;
 import au.com.phiware.ga.TransformException;
 import au.com.phiware.ga.io.MutationOutputStream;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class Mutation<Individual extends Container> extends
-													AbstractProcess<Individual, Individual> {
+                AbstractProcess<Individual, Individual> {
 	@Override
 	public Individual transform(Individual individual) {
 		try {

@@ -11,6 +11,10 @@ import au.com.phiware.ga.Environment;
 
 import cern.colt.list.ByteArrayList;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public abstract class AbstractByteContainer implements ByteContainer {
 	private ByteArrayList genome;
 	

@@ -5,6 +5,10 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Random;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public abstract class CrossoverOutputStream extends FilterOutputStream {
 	private double crossoverFrequency;
 	private Random random;

@@ -2,7 +2,6 @@ package au.com.phiware.ga.processes;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -15,6 +14,10 @@ import au.com.phiware.ga.TransformException;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public abstract class SegregableProcess<Ante extends Container, Post extends Container> extends
 		AbstractProcess<Ante, Post> {
 	private class SegregatedTransform implements Runnable {

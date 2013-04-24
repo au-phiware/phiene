@@ -2,7 +2,10 @@ package au.com.phiware.ga.containers;
 
 import java.lang.ref.WeakReference;
 
-
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class Haploid<Parent extends Ploid<?>> extends AbstractByteContainer implements Ploid<Parent> {
 	private WeakReference<Parent> parent;
 

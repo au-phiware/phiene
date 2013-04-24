@@ -4,6 +4,10 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.util.Random;
 
+/**
+ *
+ * @author Corin Lawson <corin@phiware.com.au>
+ */
 public class RandomInputStream extends FilterInputStream {
 	private Random random;
 	
