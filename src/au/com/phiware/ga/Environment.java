@@ -19,6 +19,9 @@ import org.slf4j.LoggerFactory;
 
 import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
+import au.com.phiware.util.concurrent.Continue;
+import au.com.phiware.util.concurrent.ContinueImpl;
+import au.com.phiware.util.concurrent.PausableArrayCloseableBlockingQueue;
 
 /**
  *
@@ -34,6 +37,7 @@ public class Environment<Individual extends Container> {
 
 	private int generationCount = 0;
 	private ExecutorService executor;
+	private final Continue cont = new ContinueImpl();
 
 	public Environment() {
 		this(null, (Individual[]) null);
@@ -163,6 +167,10 @@ public class Environment<Individual extends Container> {
 		this.appendProcess(process, (Process<? extends Container, ? extends Container>[]) null);
 	}
 	
+	public Continue getContinue() {
+		return cont;
+	}
+
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void evolve() throws TransformException {
 		if (population.isEmpty()) return;
@@ -179,7 +187,7 @@ public class Environment<Individual extends Container> {
 		final int bufferSize = population.size() / 2 + 1;
 
 		/* Begin feeding the queue that will become the input of the first process. */
-		feeder = in = new ArrayCloseableBlockingQueue(bufferSize);
+		feeder = in = new PausableArrayCloseableBlockingQueue(bufferSize, cont);
 		feedResult = executor.submit(new Runnable() {
 			public void run() {
 				lock.lock();
@@ -210,7 +218,7 @@ public class Environment<Individual extends Container> {
 		/* Chain the processes together and begin executing them. */
 		for (final Process process : processes) {
 			final ArrayCloseableBlockingQueue safeIn = in;
-			final ArrayCloseableBlockingQueue safeOut = new ArrayCloseableBlockingQueue<Container>(bufferSize);
+			final ArrayCloseableBlockingQueue safeOut = new PausableArrayCloseableBlockingQueue<Container>(bufferSize, cont);
 			future.add(process.takeSharedExecutor().submit(new Runnable() {
 				public void run() {
 					try {

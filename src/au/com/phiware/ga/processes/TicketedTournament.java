@@ -20,7 +20,7 @@ import au.com.phiware.ga.Environment;
 import au.com.phiware.ga.EnvironmentalProcess;
 import au.com.phiware.ga.Selection;
 import au.com.phiware.ga.TransformException;
-import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
+import au.com.phiware.util.concurrent.PausableArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import cern.colt.map.PrimeFinder;
 
@@ -63,7 +63,7 @@ public abstract class TicketedTournament<Ante extends Container, Post extends Co
 		CloseableBlockingQueue<Ante> q = null;
 		if (stakes > 0) {
 			if (!queues.containsKey(stakes)) {
-				q = new ArrayCloseableBlockingQueue<Ante>(0x10);
+				q = new PausableArrayCloseableBlockingQueue<Ante>(0x10, environment.getContinue());
 				queues.put(stakes, q);
 				this.stakes.put(q, stakes);
 			} else {
