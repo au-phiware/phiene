@@ -7,16 +7,14 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import au.com.phiware.ga.ByteContainer;
-import au.com.phiware.ga.Environment;
-
-import cern.colt.list.ByteArrayList;
 
 /**
  *
  * @author Corin Lawson <corin@phiware.com.au>
  */
 public abstract class AbstractByteContainer implements ByteContainer {
-	private ByteArrayList genome;
+	private byte[] genome;
+	private int size;
 	
 	protected abstract byte[] initGenome() throws IOException;
 	
@@ -25,10 +23,10 @@ public abstract class AbstractByteContainer implements ByteContainer {
 	 */
 	@Override
 	public byte[] getGenome() throws IOException {
-		if (genome == null)
-			genome = new ByteArrayList(initGenome());
-		
-		return Arrays.copyOf(genome.elements(), genome.size());
+		if (genome == null || size == 0)
+			setGenome(initGenome());
+
+		return Arrays.copyOf(genome, genome.length);
 	}
 
 	/* (non-Javadoc)
@@ -37,38 +35,38 @@ public abstract class AbstractByteContainer implements ByteContainer {
 	@Override
 	public void setGenome(byte[] genome) {
 		if (genome == null)
-			this.genome = null;
+			this.size = 0;
 		else {
-			if (this.genome == null)
-				this.genome = new ByteArrayList(genome.clone());
-			else
-				this.genome.elements(genome.clone());
+			if (this.genome == null || this.genome.length < genome.length)
+				this.genome = new byte[genome.length];
+			size = genome.length;
+		    System.arraycopy(this.genome, 0, genome, 0, size);
 		}
 	}
 
 	@Override
 	public void writeGenome(DataOutput out) throws IOException {
-		if (genome == null)
-			genome = new ByteArrayList(initGenome());
-		out.write(genome.elements(), 0, genome.size());
+		if (genome == null || size == 0)
+			setGenome(initGenome());
+		out.write(genome, 0, size);
 	}
 
 	@Override
 	public void readGenome(DataInput in) throws IOException {
-		if (genome != null)
-			in.readFully(genome.elements(), 0, genome.size());
+		if (genome != null && size > 0)
+			in.readFully(genome, 0, size);
 		else {
-			genome = new ByteArrayList();
+			genome = new byte[size];
 			try {
-				for (;;)
-					genome.add(in.readByte());
+				for (int i = 0; i < size; i++)
+					genome[i] = in.readByte();
 			} catch(EOFException ok) {}
 		}
 	}
 
 	@Override
 	protected void finalize() throws Throwable {
-		Environment.pipeLogger.info("die:{}", this);
+		//FIXME: Environment.pipeLogger.info("die:{}", this);
 		super.finalize();
 	}
 }

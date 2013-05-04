@@ -143,7 +143,7 @@ public abstract class Fertilization<Parent extends Haploid<? extends Individual>
 			}
 		}
 		if (in == null) {
-			in = new ArrayCloseableBlockingQueue<Parent>(0x10);
+			in = new ArrayCloseableBlockingQueue<Parent>(0x10); //TODO: add eventReceiver(?)
 			queues.add(in);
 		}
 

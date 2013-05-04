@@ -17,6 +17,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import au.com.phiware.event.Emitter;
+import au.com.phiware.event.Receiver;
 import au.com.phiware.util.concurrent.ArrayCloseableBlockingQueue;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.Continue;
@@ -27,9 +29,8 @@ import au.com.phiware.util.concurrent.PausableArrayCloseableBlockingQueue;
  *
  * @author Corin Lawson <corin@phiware.com.au>
  */
-public class Environment<Individual extends Container> {
+public class Environment<Individual extends Container> implements Emitter {
 	public final static Logger logger = LoggerFactory.getLogger("au.com.phiware.ga.Environment");
-	public final static Logger pipeLogger = LoggerFactory.getLogger("au.com.phiware.ga.Pipe");
     private final ReentrantLock populationLock;
 	private Collection<Individual> population = new HashSet<Individual>();
 	private Collection<Individual> deaths = Collections.synchronizedCollection(new HashSet<Individual>());;
@@ -38,6 +39,39 @@ public class Environment<Individual extends Container> {
 	private int generationCount = 0;
 	private ExecutorService executor;
 	private final Continue cont = new ContinueImpl();
+	private Receiver events;
+
+	public class EnvironmentEvent {
+		public Environment<Individual> getSource() {
+			return Environment.this;
+		}
+	}
+
+	public class ConnectEvent extends EnvironmentEvent {
+		private final CloseableBlockingQueue<? extends Individual> in;
+		private final CloseableBlockingQueue<? super Individual> out;
+		private final Process<? extends Individual, ? super Individual> via;
+
+		private ConnectEvent(final CloseableBlockingQueue<? extends Individual> in,
+		                     final Process<? extends Individual, ? super Individual> via,
+		                     final CloseableBlockingQueue<? super Individual> out) {
+			this.in = in;
+			this.out = out;
+			this.via = via;
+		}
+
+		public CloseableBlockingQueue<? extends Individual> getInQueue() {
+			return in;
+		}
+
+		public CloseableBlockingQueue<? super Individual> getOutQueue() {
+			return out;
+		}
+
+		public Process<? extends Individual, ? super Individual> getProcess() {
+			return via;
+		}
+	}
 
 	public Environment() {
 		this(null, (Individual[]) null);
@@ -187,7 +221,7 @@ public class Environment<Individual extends Container> {
 		final int bufferSize = population.size() / 2 + 1;
 
 		/* Begin feeding the queue that will become the input of the first process. */
-		feeder = in = new PausableArrayCloseableBlockingQueue(bufferSize, cont);
+		feeder = in = new PausableArrayCloseableBlockingQueue(bufferSize, events, cont);
 		feedResult = executor.submit(new Runnable() {
 			public void run() {
 				lock.lock();
@@ -218,11 +252,11 @@ public class Environment<Individual extends Container> {
 		/* Chain the processes together and begin executing them. */
 		for (final Process process : processes) {
 			final ArrayCloseableBlockingQueue safeIn = in;
-			final ArrayCloseableBlockingQueue safeOut = new PausableArrayCloseableBlockingQueue<Container>(bufferSize, cont);
+			final ArrayCloseableBlockingQueue safeOut = new PausableArrayCloseableBlockingQueue<Container>(bufferSize, events, cont);
 			future.add(process.takeSharedExecutor().submit(new Runnable() {
 				public void run() {
 					try {
-						pipeLogger.info("connect:{}:{}:{}", new Object[] {safeIn.uid, process, safeOut.uid});
+						if (events != null) events.post(new ConnectEvent(safeIn, process, safeOut));
 						process.transformPopulation(safeIn, safeOut);
 					} catch (RuntimeException e) {
 						// Something went wrong with process, force close on queue
@@ -316,5 +350,15 @@ public class Environment<Individual extends Container> {
 	public void evolve(int generationCount) throws TransformException {
 		for (; generationCount > 0; generationCount--)
 			evolve();
+	}
+
+	@Override
+	public Receiver getEventReceiver() {
+		return events;
+	}
+
+	@Override
+	public void setEventReceiver(Receiver eventReceiver) {
+		events = eventReceiver;
 	}
 }
