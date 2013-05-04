@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
+//import java.util.Random;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,7 @@ import au.com.phiware.ga.containers.Calculator;
 public class CalculatorTournament extends
 		TicketedTournament<Calculator<Byte>, Calculator<Byte>> {
 	private final static Logger logger = LoggerFactory.getLogger(CalculatorTournament.class);
-	private final Random random;
+	//private final Random random;
 	
 	public CalculatorTournament() {
 		this(2);
@@ -22,7 +22,7 @@ public class CalculatorTournament extends
 
 	protected CalculatorTournament(int numberOfParticipients) {
 		super(numberOfParticipients);
-		random = new Random();
+		//random = new Random();
 	}
 
 	@Override

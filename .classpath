@@ -8,7 +8,5 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Logback"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/util"/>
-	<classpathentry kind="lib" path="/colt/lib/concurrent.jar"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/colt"/>
 	<classpathentry kind="output" path="bin/main"/>
 </classpath>
