@@ -221,6 +221,7 @@ $ ->
     @die = (pkt) ->
       $('button').click() if $('#stepthru').attr 'checked'
       Individual.remove pkt.data
+    socket.on 'die', @die
 
     @pause = ->
       socket.emit 'pause'
