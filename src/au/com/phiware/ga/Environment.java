@@ -342,9 +342,13 @@ public class Environment<Individual extends Container> implements Emitter {
 	}
 
 	public void shutdown() {
-		setExecutor(null);
+		this.executor.shutdown();
 		for (Process<?, ?> process : processes)
 			process.shutdown();
+	}
+
+	public boolean isShutdown() {
+		return this.executor.isShutdown();
 	}
 
 	public void evolve(int generationCount) throws TransformException {
