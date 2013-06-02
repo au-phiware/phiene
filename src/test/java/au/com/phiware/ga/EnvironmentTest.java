@@ -108,15 +108,16 @@ public class EnvironmentTest {
 	@SuppressWarnings("unchecked")
 	public void testCompatibleProcesses() throws Throwable {
 		AC[] pop = new AC[1];
+		AC ac = new AC(test);
 		
-		Environment<AC> environment = new Environment<AC>(new A2BC(), new AC(test));
+		Environment<AC> environment = new Environment<AC>(new A2BC(), ac);
 		environment.appendProcess(new AD2ACE(), new B2ADF());
 		assertThat("Should have processes.", 3, is(environment.getProcesses().size()));
 
 		environment.evolve();
 		pop = environment.getPopulation().toArray(pop);
-		assertThat("Population should be singular", 1, is(pop.length));
-		assertEquals("Population should transform", pop[0].getClass(), ACE.class); 
+		assertThat("Population should be singular", 2, is(pop.length));
+		assertEquals("Population should transform", ACE.class, (pop[0] == ac ? pop[1] : pop[0]).getClass());
 	}
 
 	@Test(expected=ClassCastException.class)

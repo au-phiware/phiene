@@ -1,5 +1,6 @@
 package au.com.phiware.ga;
 
+import static java.util.Arrays.copyOf;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -1252,13 +1253,13 @@ public class GenomesTest {
 
 	@Test
 	public void testGetGenomeBytesContainer() throws IOException {
-		individual.bytes = phenome;
+		individual.bytes = copyOf(phenome, phenome.length);
 		assertArrayEquals(genome, Genomes.getGenomeBytes(individual));
 	}
 
 	@Test
 	public void testGetGenomeFilter() throws Exception {
-		individual.bytes = phenome;
+		individual.bytes = copyOf(phenome, phenome.length);
 		assertNotNull(Genomes.getGenomeFilters(individual, InverterOutputStream.class));
 		assertArrayEquals(invGenome, Genomes.getGenomeBytes(individual));
 	}
