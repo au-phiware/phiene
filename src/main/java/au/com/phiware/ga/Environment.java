@@ -77,6 +77,7 @@ public class Environment<Individual extends Container> implements Emitter {
 		this(null, (Individual[]) null);
 	}
 	
+	@SafeVarargs
 	public Environment(Individual... population) {
 		this(null, population);
 	}
@@ -85,6 +86,7 @@ public class Environment<Individual extends Container> implements Emitter {
 		this(firstProcess, (Individual[]) null);
 	}
 	
+	@SafeVarargs
 	public Environment(
 			Process<? super Individual, ? extends Container> firstProcess,
 			Individual... population) {
@@ -163,7 +165,7 @@ public class Environment<Individual extends Container> implements Emitter {
 	 * @throws ClassCastException if the Post type of any process can not be cast to the Ante type of the following process.
 	 */
 	public void appendProcess(Process<? extends Container, ? extends Individual> lastProcess,
-			Process<? extends Container, ? extends Container>...reverseOrderedProcesses) {
+			@SuppressWarnings("unchecked") Process<? extends Container, ? extends Container>...reverseOrderedProcesses) {
 		if (processes.isEmpty())
 			throw new IllegalStateException("Process list is empty, use setFirstProcess.");
 

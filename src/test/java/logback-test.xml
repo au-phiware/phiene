@@ -5,7 +5,7 @@
   <logger name="au.com.phiware.math" level="warn" />
 
   <appender name="tree" class="ch.qos.logback.core.FileAppender">
-    <file>tree.log</file>
+      <file>src/test/tree.log</file>
     <encoder>
       <pattern>%msg%n</pattern>
     </encoder>

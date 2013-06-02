@@ -64,7 +64,6 @@ public class MutationTest {
 			@Override
 			public Container transform(Container individual) {
 				try {
-					@SuppressWarnings("unchecked")
 					OutputStream[] chain = Genomes.getGenomeFilters(individual, MutationOutputStream.class);
 					ByteArrayOutputStream bytes = (ByteArrayOutputStream) chain[0];
 					MutationOutputStream mutator = (MutationOutputStream) chain[1];

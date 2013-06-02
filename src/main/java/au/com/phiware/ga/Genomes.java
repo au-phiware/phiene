@@ -54,6 +54,7 @@ public final class Genomes {
 		Container[] a = new Container[from.size()];
 		logTransform(to, from.toArray(a));
 	}
+	@SafeVarargs
 	public static <Ante extends Container, Post extends Container> void logTransform(Post to, Ante... from) {
 		if (treeLogger.isInfoEnabled() && from.length > 0) {
 			StringBuilder msg = new StringBuilder();
@@ -413,9 +414,11 @@ public final class Genomes {
 	/*
 	 * Returns null is specified filter(s) does not define a public no-arg constructor or public constructor that accepts an OutputStream.
 	 */
+	@SafeVarargs
 	public static OutputStream[] getGenomeFilters(Container self, Class<? extends FilterOutputStream>... filters) throws IOException, IllegalArgumentException, SecurityException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		return getGenomeFilters(self, self, filters);
 	}
+	@SafeVarargs
 	public static OutputStream[] getGenomeFilters(Container from, Container to, Class<? extends FilterOutputStream>... filters)
 			throws IOException, IllegalArgumentException, SecurityException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		ByteArrayOutputStream bytes = new ByteArrayOutputStream();

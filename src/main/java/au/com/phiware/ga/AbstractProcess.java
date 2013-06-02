@@ -46,7 +46,6 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			throws InterruptedException, TimeoutException {
 		final Ante individual = in.take();
 		return new Callable<Post>() {
-			@SuppressWarnings("unchecked")
 			public Post call() {
 				try {
 					LoggerFactory.getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}...", individual);

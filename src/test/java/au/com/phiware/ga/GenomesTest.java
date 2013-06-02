@@ -1256,7 +1256,6 @@ public class GenomesTest {
 		assertArrayEquals(genome, Genomes.getGenomeBytes(individual));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testGetGenomeFilter() throws Exception {
 		individual.bytes = phenome;

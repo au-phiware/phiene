@@ -18,7 +18,6 @@ public class Mutation<Individual extends Container> extends
 	@Override
 	public Individual transform(Individual individual) {
 		try {
-			@SuppressWarnings("unchecked")
 			OutputStream[] chain = Genomes.getGenomeFilters(individual, MutationOutputStream.class);
 			ByteArrayOutputStream bytes = (ByteArrayOutputStream) chain[0];
 			MutationOutputStream mutator = (MutationOutputStream) chain[1];

@@ -1,4 +1,4 @@
-/bin
+/target
 *.log
 *.log-*
 .DS_Store

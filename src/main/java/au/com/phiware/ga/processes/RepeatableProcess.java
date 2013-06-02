@@ -28,7 +28,6 @@ public abstract class RepeatableProcess<Ante extends Container, Post extends Con
 			this.individual = individual;
 		}
 		
-		@SuppressWarnings("unchecked")
 		public Post call() {
 			try {
 				LoggerFactory.getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}...", individual);
