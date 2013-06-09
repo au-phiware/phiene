@@ -1,5 +1,8 @@
 package au.com.phiware.ga;
 
+import static au.com.phiware.ga.Genomes.logTransform;
+import static org.slf4j.LoggerFactory.getLogger;
+
 import java.lang.reflect.GenericArrayType;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -24,8 +27,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.annotation.Nullable;
+
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
@@ -35,30 +39,37 @@ import au.com.phiware.util.concurrent.QueueClosedException;
  * @author Corin Lawson <corin@phiware.com.au>
  */
 public abstract class AbstractProcess<Ante extends Container, Post extends Container> implements Process<Ante, Post> {
-	public final static Logger logger = LoggerFactory.getLogger("au.com.phiware.ga.Process");
+	public final static Logger logger = getLogger("au.com.phiware.ga.Process");
 	private static int threadPoolSize = 3;
 	protected ExecutorService sharedExecutor;
 	private Queue<ExecutorService> executorPool = new ConcurrentLinkedQueue<ExecutorService>();
-	
+
 	public abstract Post transform(Ante individual);
-	
+
+	protected class Transformer implements Callable<Post> {
+		final protected Ante individual;
+
+		public Transformer(Ante individual) {
+			this.individual = individual;
+		}
+
+		public Post call() {
+			try {
+				getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}...", individual);
+				Post rv = transform(individual);
+				logTransform(rv, individual);
+				return rv;
+			} catch (RuntimeException e) {
+				throw e;
+			} catch (Exception e) {
+				throw new TransformException(e);
+			}
+		}
+	}
+
 	public Callable<Post> transformer(final CloseableBlockingQueue<? extends Ante> in)
 			throws InterruptedException, TimeoutException {
-		final Ante individual = in.take();
-		return new Callable<Post>() {
-			public Post call() {
-				try {
-					LoggerFactory.getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}...", individual);
-					Post rv = transform(individual);
-					Genomes.logTransform(rv, individual);
-					return rv;
-				} catch (RuntimeException e) {
-					throw e;
-				} catch (Exception e) {
-					throw new TransformException(e);
-				}
-			}
-		};
+		return new Transformer(in.take());
 	}
 	
 	protected List<Future<Post>> submitTransformers(final CloseableBlockingQueue<? extends Ante> in, final ExecutorService executor) throws InterruptedException {

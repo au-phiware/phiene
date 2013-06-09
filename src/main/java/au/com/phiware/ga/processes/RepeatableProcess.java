@@ -6,12 +6,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.slf4j.LoggerFactory;
-
 import au.com.phiware.ga.AbstractProcess;
 import au.com.phiware.ga.Container;
-import au.com.phiware.ga.Genomes;
-import au.com.phiware.ga.TransformException;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
@@ -21,37 +17,22 @@ import au.com.phiware.util.concurrent.QueueClosedException;
  */
 public abstract class RepeatableProcess<Ante extends Container, Post extends Container> extends
 		AbstractProcess<Ante, Post> {
-	private class Repeatable implements Callable<Post> {
-		private Ante individual;
-		
+	protected class Repeatable extends AbstractProcess<Ante, Post>.Transformer {
 		public Repeatable(Ante individual) {
-			this.individual = individual;
+			super(individual);
 		}
-		
-		public Post call() {
-			try {
-				LoggerFactory.getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}...", individual);
-				Post rv = transform(individual);
-				Genomes.logTransform(rv, individual);
-				return rv;
-			} catch (RuntimeException e) {
-				throw e;
-			} catch (Exception e) {
-				throw new TransformException(e);
-			}
-		}
-		
+
 		public int repeatCount() {
 			return getRepeatCount(individual);
 		}
 	}
-	
+
 	@Override
 	public Callable<Post> transformer(CloseableBlockingQueue<? extends Ante> in)
 			throws InterruptedException {
 		return new Repeatable(in.take());
 	}
-	
+
 	@Override
 	protected List<Future<Post>> submitTransformers(final CloseableBlockingQueue<? extends Ante> in, final ExecutorService executor) throws InterruptedException {
 		List<Future<Post>> results = new LinkedList<Future<Post>>();
@@ -71,7 +52,7 @@ public abstract class RepeatableProcess<Ante extends Container, Post extends Con
 		} catch (QueueClosedException expected) {}
 		return results;
 	}
-	
+
 	/**
 	 * Returns the number of times that this process' transform should be repeated for the specified individual.
 	 * This implementation returns zero, meaning the transform will be executed once per individual.
