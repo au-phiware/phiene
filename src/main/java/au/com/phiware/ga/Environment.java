@@ -112,6 +112,14 @@ public class Environment<Individual extends Container> implements Emitter {
 	}
 
 	/**
+	 * Returns the size of the population.
+	 * @return the size of the population.
+	 */
+	public int getPopulationSize() {
+		return population.size();
+	}
+
+	/**
 	 * @param member to add to the population
 	 */
 	public boolean addToPopulation(Individual member) {
@@ -221,7 +229,7 @@ public class Environment<Individual extends Container> implements Emitter {
 		ExecutorService executor = getExecutor();
 		List<Future> future = new ArrayList<Future>();
 		final int bufferSize = population.size() / 2 + 1;
-
+		
 		/* Begin feeding the queue that will become the input of the first process. */
 		feeder = in = new PausableArrayCloseableBlockingQueue(bufferSize, events, cont);
 		feedResult = executor.submit(new Runnable() {
