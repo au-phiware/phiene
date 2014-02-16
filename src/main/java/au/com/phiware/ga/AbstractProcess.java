@@ -31,6 +31,8 @@ import javax.annotation.Nullable;
 
 import org.slf4j.Logger;
 
+import com.codahale.metrics.Timer;
+
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
@@ -43,6 +45,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 	private static int threadPoolSize = 3;
 	protected ExecutorService sharedExecutor;
 	private Queue<ExecutorService> executorPool = new ConcurrentLinkedQueue<ExecutorService>();
+	private Timer transformTimer;
 
 	public abstract Post transform(Ante individual);
 
@@ -54,7 +57,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 		}
 
 		public Post call() {
-			try {
+			try (Timer.Context timer = transformTimer()) {
 				getLogger("au.com.phiware.ga.Process."+getShortName()).debug("transforming {}...", individual);
 				Post rv = transform(individual);
 				logTransform(rv, individual);
@@ -196,6 +199,20 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 		return "Proc" + myProcNumber;
 	}
 
+	public @Nullable Timer getTransformTimer() {
+		return transformTimer;
+	}
+
+	public void setTransformTimer(@Nullable Timer transformTimer) {
+		this.transformTimer = transformTimer;
+	}
+	
+	private Timer.Context transformTimer() {
+		if (transformTimer == null)
+			return null;
+		return transformTimer.time();
+	}
+	
 	public final Callable<Post> nullTransformer = new Callable<Post>() {
 		public Post call() {
 			return null;
