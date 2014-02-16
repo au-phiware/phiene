@@ -197,6 +197,8 @@ public class Environment<Individual extends Container> implements Emitter {
 		if (population.isEmpty()) return;
 		logger.info("Evolve:{}", generationCount);
 		
+		cont.checkInUninterruptibly();
+
 		final Lock lock = populationLock;
 		final Collection<Individual> pop = population;
 		final CloseableBlockingQueue<? super Individual> feeder;
