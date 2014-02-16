@@ -153,8 +153,10 @@ public class Environment<Individual extends Container> implements Emitter {
 	@SuppressWarnings("unchecked")
 	protected boolean addProcess(Process<? extends Container, ? extends Container> process) {
 		boolean rv = processes.add(process);
-		if (process instanceof EnvironmentalProcess)
-			((EnvironmentalProcess<Individual>) process).didAddToEnvironment(this);
+		if (rv) {
+			if (process instanceof EnvironmentalProcess)
+				((EnvironmentalProcess<Individual>) process).didAddToEnvironment(this);
+		}
 		return rv;
 	}
 	/**
@@ -172,8 +174,9 @@ public class Environment<Individual extends Container> implements Emitter {
 	 * @param lastProcess to add to end of this evolution.
 	 * @throws ClassCastException if the Post type of any process can not be cast to the Ante type of the following process.
 	 */
+	@SuppressWarnings("unchecked")
 	public void appendProcess(Process<? extends Container, ? extends Individual> lastProcess,
-			@SuppressWarnings("unchecked") Process<? extends Container, ? extends Container>...reverseOrderedProcesses) {
+			Process<? extends Container, ? extends Container>...reverseOrderedProcesses) {
 		if (processes.isEmpty())
 			throw new IllegalStateException("Process list is empty, use setFirstProcess.");
 
@@ -190,7 +193,7 @@ public class Environment<Individual extends Container> implements Emitter {
 					throw new ClassCastException(postType.getName()+" cannot be cast to "+anteType.getName());
 				postType = AbstractProcess.actualPostType(process);
 
-				addProcess(process);
+				processes.add(process);
 			}
 			anteType = AbstractProcess.actualAnteType(lastProcess);
 			if (!anteType.isAssignableFrom(postType))
@@ -200,6 +203,12 @@ public class Environment<Individual extends Container> implements Emitter {
 			while (processes.size() > priorSize)
 				processes.remove(priorSize);
 			throw e;
+		} finally {
+			for (; processes.size() > priorSize; priorSize++) {
+				Process<? extends Container, ? extends Container> process = processes.get(priorSize);
+				if (process instanceof EnvironmentalProcess)
+					((EnvironmentalProcess<Individual>) process).didAddToEnvironment(this);
+			}
 		}
 	}
 	/**
