@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import au.com.phiware.event.Receiver;
 import au.com.phiware.ga.AbstractProcess;
 import au.com.phiware.ga.Container;
 import au.com.phiware.ga.TransformException;
@@ -69,6 +70,7 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 			final CloseableBlockingQueue<? extends Ante> in,
 			final CloseableBlockingQueue<? super Post> out)
 					throws TransformException {
+		Receiver events = null;
 		Map<CloseableBlockingQueue<Ante>, Future<?>> qMap = new HashMap<CloseableBlockingQueue<Ante>, Future<?>>();
 		ExecutorService transformer = newExecutor(0);
 		
@@ -82,6 +84,10 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 						if (q != null) {
 							if (!qMap.containsKey(q)) {
 								qMap.put(q, transformer.submit(new SegregatedTransform(q, out)));
+								if ((events = getEventReceiver()) != null) {
+									events.post(new ConnectEvent<Ante, Ante>(in, q));
+									events.post(new ConnectEvent<>(q, out));
+								}
 							}
 							q.preventClose();
 							feeder.submit(new Runnable() {
@@ -105,7 +111,12 @@ public abstract class SegregableProcess<Ante extends Container, Post extends Con
 			closeSegregateQueues();
 
 			drainFutures(qMap.values());
-			
+			if ((events = getEventReceiver()) != null) {
+				for(CloseableBlockingQueue<Ante> q : qMap.keySet()) {
+					events.post(new DisconnectEvent<Ante, Ante>(in, q));
+					events.post(new DisconnectEvent<>(q, out));
+				}
+			}
 		} catch (InterruptedException earlyExit) {
 			@SuppressWarnings("unused")
 			int dropCount = 0;

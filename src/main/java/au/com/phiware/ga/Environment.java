@@ -41,38 +41,6 @@ public class Environment<Individual extends Container> implements Emitter {
 	private final Continue cont = new ContinueImpl();
 	private Receiver events;
 
-	public class EnvironmentEvent {
-		public Environment<Individual> getSource() {
-			return Environment.this;
-		}
-	}
-
-	public class ConnectEvent extends EnvironmentEvent {
-		private final CloseableBlockingQueue<? extends Individual> in;
-		private final CloseableBlockingQueue<? super Individual> out;
-		private final Process<? extends Individual, ? super Individual> via;
-
-		private ConnectEvent(final CloseableBlockingQueue<? extends Individual> in,
-		                     final Process<? extends Individual, ? super Individual> via,
-		                     final CloseableBlockingQueue<? super Individual> out) {
-			this.in = in;
-			this.out = out;
-			this.via = via;
-		}
-
-		public CloseableBlockingQueue<? extends Individual> getInQueue() {
-			return in;
-		}
-
-		public CloseableBlockingQueue<? super Individual> getOutQueue() {
-			return out;
-		}
-
-		public Process<? extends Individual, ? super Individual> getProcess() {
-			return via;
-		}
-	}
-
 	public Environment() {
 		this(null, (Individual[]) null);
 	}
@@ -275,7 +243,6 @@ public class Environment<Individual extends Container> implements Emitter {
 			future.add(process.takeSharedExecutor().submit(new Runnable() {
 				public void run() {
 					try {
-						if (events != null) events.post(new ConnectEvent(safeIn, process, safeOut));
 						process.transformPopulation(safeIn, safeOut);
 					} catch (RuntimeException e) {
 						// Something went wrong with process, force close on queue

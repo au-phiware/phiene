@@ -33,6 +33,7 @@ import org.slf4j.Logger;
 
 import com.codahale.metrics.Timer;
 
+import au.com.phiware.event.Receiver;
 import au.com.phiware.util.concurrent.CloseableBlockingQueue;
 import au.com.phiware.util.concurrent.QueueClosedException;
 
@@ -46,8 +47,53 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 	protected ExecutorService sharedExecutor;
 	private Queue<ExecutorService> executorPool = new ConcurrentLinkedQueue<ExecutorService>();
 	private Timer transformTimer;
+	private Receiver events;
 
 	public abstract Post transform(Ante individual);
+
+	public class ProcessEvent {
+		public Process<Ante, Post> getSource() {
+			return AbstractProcess.this;
+		}
+	}
+
+	public class ConnectEvent<A extends Container, P extends Container> extends ProcessEvent {
+		private final CloseableBlockingQueue<? extends A> in;
+		private final CloseableBlockingQueue<? super P> out;
+
+		public ConnectEvent(final CloseableBlockingQueue<? extends A> in,
+		                    final CloseableBlockingQueue<? super P> out) {
+			this.in = in;
+			this.out = out;
+		}
+
+		public CloseableBlockingQueue<? extends A> getSourceQueue() {
+			return in;
+		}
+
+		public CloseableBlockingQueue<? super P> getTargetQueue() {
+			return out;
+		}
+	}
+
+	public class DisconnectEvent<A extends Container, P extends Container> extends ProcessEvent {
+		private final CloseableBlockingQueue<? extends A> in;
+		private final CloseableBlockingQueue<? super P> out;
+
+		public DisconnectEvent(final CloseableBlockingQueue<? extends A> in,
+		                       final CloseableBlockingQueue<? super P> out) {
+			this.in = in;
+			this.out = out;
+		}
+
+		public CloseableBlockingQueue<? extends A> getSourceQueue() {
+			return in;
+		}
+
+		public CloseableBlockingQueue<? super P> getTargetQueue() {
+			return out;
+		}
+	}
 
 	protected class Transformer implements Callable<Post> {
 		final protected Ante individual;
@@ -98,8 +144,10 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			final CloseableBlockingQueue<? extends Ante> in,
 			final CloseableBlockingQueue<? super Post> out)
 					throws TransformException {
-		ExecutorService executor = takeSharedExecutor();
+		if (events != null)
+			events.post(new ConnectEvent<Ante, Post>(in, out));
 		
+		ExecutorService executor = takeSharedExecutor();
 		try {
 			drainFutures(submitTransformers(in, executor), out);
 		} catch (InterruptedException earlyExit) {
@@ -118,6 +166,7 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			//dropCount += done count in results(?)
 		} finally {
 			giveExecutor(executor);
+			if (events != null) events.post(new DisconnectEvent<Ante, Post>(in, out));
 		}
 	}
 	
@@ -218,6 +267,16 @@ public abstract class AbstractProcess<Ante extends Container, Post extends Conta
 			return null;
 		}
 	};
+
+	@Override
+	public Receiver getEventReceiver() {
+		return events;
+	}
+
+	@Override
+	public void setEventReceiver(Receiver eventReceiver) {
+		events = eventReceiver;
+	}
 
 	private static final Comparator<? super Future<?>> FUTURE_COMPARATOR = new Comparator<Future<?>>() {
 		public int compare(Future<?> a, Future<?> b) {
