@@ -32,8 +32,7 @@ public class ChromosomeOutputStream extends FilterOutputStream {
 		this(out, 1);
 	}
 
-	@Override
-	public void write(int b) throws IOException {
+	public static int[] encode(int b) {
 		int[] clear = {(b & 0xF0) >> 4, b & 0x0F};
 		int[] coded = {0, 0};
 
@@ -41,6 +40,13 @@ public class ChromosomeOutputStream extends FilterOutputStream {
 			for (int x = 0, p = 1; x < G.length; x++, p <<= 1)
 				if ((p & clear[i]) != 0)
 					coded[i] ^= G[x];
+
+		return coded;
+	}
+
+	@Override
+	public void write(int b) throws IOException {
+		int[] coded = encode(b);
 
 		for (int i = 0; i < size; i++)
 			out.write(coded[0]);

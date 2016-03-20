@@ -44,16 +44,16 @@ public class ChromosomeInputStream extends FilterInputStream {
 		syndrome = err;
 		this.size = size;
 	}
-	public int read()
-	         throws IOException {
-		int[] clear = new int[size << 1];
-		byte[] s = new byte[size << 1];
-		byte[] coded = new byte[size << 1];
+
+	public static int decode(byte[] coded) {
+		return decode(coded, new byte[coded.length]);
+	}
+
+	public static int decode(byte[] coded, byte[] s) {
+		int size = coded.length >> 1;
+		int[] clear = new int[coded.length];
 		int x, p, b = 0;
-		
-		if (in.read(coded) < 0)
-			return -1;
-		
+
 		for (int i = 0; i < clear.length; i++) {
 			for (x = 0, p = 1; x < H.length; x++, p <<= 1)
 				if ((p & coded[i]) != 0)
@@ -66,7 +66,7 @@ public class ChromosomeInputStream extends FilterInputStream {
 			}
 			clear[i] = ((coded[i] & 32) >>> 1 | coded[i] & 14) >>> 1;
 		}
-		
+
 		for (int j = 0; j < 2; j++) {
 			boolean found = false;
 			b <<= 4;
@@ -81,13 +81,26 @@ public class ChromosomeInputStream extends FilterInputStream {
 					b |= clear[j * size + i];
 			}
 		}
-		
-		syndrome.write(s);
-		syndrome.flush();
-		
+
 		return b;
 	}
-	
+
+	public int read()
+	         throws IOException {
+		byte[] s = new byte[size << 1];
+		byte[] coded = new byte[size << 1];
+
+		if (in.read(coded) < 0)
+			return -1;
+
+		int b = decode(coded, s);
+
+		syndrome.write(s);
+		syndrome.flush();
+
+		return b;
+	}
+
 	public int read(byte[] b,
             int off,
             int len)
@@ -100,7 +113,7 @@ public class ChromosomeInputStream extends FilterInputStream {
 		}
 		return i - off;
 	}
-	
+
 	public OutputStream getSyndrome() {
 		return syndrome;
 	}
