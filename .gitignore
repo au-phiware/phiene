@@ -44,3 +44,5 @@ local.properties
 Session.vim
 .netrwhist
 *~
+.lein-repl-history
+.nrepl-port
