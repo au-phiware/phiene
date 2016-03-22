@@ -8,7 +8,7 @@
 (def ^:dynamic *mutation-frequency* 0.00001)
 (def ^:dynamic *mutation-bit-rate* 0.0001)
 (def ^:dynamic *crossover-frequency* 0.001)
-(def ^:dynamic *parent-count* 3)
+(def ^:dynamic *parent-count* 2)
 (def ^:dynamic *make-container*
   (fn
     ([b] (ref b))
@@ -122,11 +122,11 @@
            reverse)))
 
 (defn encode
-  ([]    (encode *parent-count*))
-  ([n]   (fn [c] (transduce (mapcat #(encode-byte n %)) conj c)))
-  ([n c] ((encode n) c)))
+  ([]   (let [n *parent-count*]
+           (fn [c] (transduce (mapcat #(encode-byte n %)) conj c))))
+  ([c] ((encode) c)))
 
-(comment into-array Byte/TYPE (encode n c))
+(comment into-array Byte/TYPE (encode c))
 
 (def H [0x1, 0xF, 0x7, 0xB, 0x3, 0xD, 0x5, 0x9])
 (def revH [1 1, 0 0x10, 0 0x40, 0 4, 0 0x80, 0 8, 0 0x20, 0 2])
@@ -152,82 +152,88 @@
               b)))))
 
 (defn decode
-  ([] (decode *parent-count*))
-  ([n] (fn [ind]
-         (transduce
-           (comp
-             (partition-all n)
-             (map decode-nibble)
-             (partition-all 2)
-             (map (fn [[high low]]
-                    (if (= low nil) (recur [0 high])
-                      (bit-or (bit-shift-left high 4) low)))))
-           conj
-           ind)))
-  ([n ind] ((decode n) ind)))
+  ([] (let [n *parent-count*]
+        (fn [ind]
+          (transduce
+            (comp
+              (partition-all n)
+              (map decode-nibble)
+              (partition-all 2)
+              (map (fn [[high low]]
+                     (if (= low nil) (recur [0 high])
+                       (bit-or (bit-shift-left high 4) low)))))
+            conj
+            ind))))
+  ([ind] ((decode) ind)))
 
-(comment map (fn [n] (map #(-> % (bit-xor (second (encode 1 [n]))) cardinality) (filter #(= (decode 1 [0 %]) [n]) (map to-byte (range 0x100))))) (range 0x10))
+(comment map (binding [*parent-count* 1] (fn [n] (map #(-> % (bit-xor (second (encode [n]))) cardinality) (filter #(= (decode [0 %]) [n]) (map to-byte (range 0x100)))))) (range 0x10))
 
 (defn tournament
-  ([compete] (tournament compete *parent-count*))
-  ([compete n]
-   (comp
-     (partition-all n)
-     (map (comp first compete)))))
+  ([compete]
+   (let [n *parent-count*]
+     (comp
+       (partition-all n)
+       (map (comp first compete))))))
 
 (defn ticketed-tournament
-  ([compete] (ticketed-tournament compete *parent-count*))
-  ([compete n] (ticketed-tournament compete n 1))
-  ([compete n cost]
-   (comp
-     (map #(*make-container* (deref %) (assoc (meta %) :ticket-count (-> % meta :ticket-count (- cost)))))
-     (partition-all n)
-     (map compete)
-     (mapcat #(cons (*make-container* (-> % first deref) (assoc (-> % first meta) :ticket-count (+ (* cost n) (-> % first meta :ticket-count)))) (rest %)))
-     (filter #(-> % meta :ticket-count (> 0))))))
+  ([compete] (ticketed-tournament compete 1))
+  ([compete cost]
+   (let [n *parent-count*]
+     (comp
+       (map #(*make-container* (deref %) (assoc (meta %) :ticket-count (-> % meta :ticket-count (- cost)))))
+       (partition-all n)
+       (map compete)
+       (mapcat #(cons (*make-container* (-> % first deref) (assoc (-> % first meta) :ticket-count (+ (* cost n) (-> % first meta :ticket-count)))) (rest %)))
+       (filter #(-> % meta :ticket-count (> 0)))))))
 
 (defn- crossover
-  ([ind meta]
+  ([n freq ind m]
    (->
      (map #(nth %1 (mod %2 (count %1)))
-          (partition-all *parent-count* (seq @ind))
+          (partition-all n (seq @ind))
           (iterate (fn [b]
-                     (if (< (rand) *crossover-frequency*)
-                       (mod (+ 1 b (rand-int  (dec *parent-count*))) *parent-count*)
+                     (if (< (rand) freq)
+                       (mod (+ 1 b (rand-int  (dec n))) n)
                        b))
-                   (rand-int *parent-count*)))
+                   (rand-int n)))
      byte-array
-     (*make-container* meta)))
-  ([ind] (crossover ind (meta ind))))
+     (*make-container* m)))
+  ([n freq ind] (crossover n freq ind (meta ind))))
 
-(def meiosis (map crossover))
+(defn meiosis
+  ([] (let [n *parent-count*
+            f *crossover-frequency*] (map (partial crossover n f)))))
 
 (comment
   ;; Regardless of the *crossover-frequency* the result should be about 500
   binding [*crossover-frequency* 0.01]
   (let [population (repeatedly 100 #(*make-container* (byte-array (flatten (repeat 10 [0 1])))))]
-    (apply + (flatten (map (comp seq deref) (transduce meiosis conj population))))))
+    (apply + (flatten (map (comp seq deref) (transduce (meiosis) conj population))))))
 
-(def ticketed-meiosis
-  (mapcat (fn [ind]
-            (repeatedly (or (:ticket-count (meta ind)) 1)
-                        #(crossover ind (assoc (meta ind) :ticket-count 1))))))
+(defn ticketed-meiosis
+  ([] (let [n *parent-count*
+            f *crossover-frequency*]
+        (mapcat (fn [ind]
+                  (repeatedly (or (:ticket-count (meta ind)) 1)
+                              #(crossover n f ind (assoc (meta ind) :ticket-count 1))))))))
 
-(def mutation
-  (map (fn [ind]
-         (let [genome @ind
-               limit (* *mutation-frequency* (alength genome))
-               bits (* 8 (alength genome))
-               step (/ *mutation-frequency* *mutation-bit-rate* bits)]
-           (loop [o (rand)]
-             (when (<= o limit)
-               (let [f (rand-int bits)
-                     b (bit-and 7 f)
-                     f (bit-shift-right f 3)
-                     b (bit-shift-left 1 b)]
-                 (aset-byte genome f (bit-xor (aget genome f) (to-byte b))))
-               (recur (+ o step)))))
-         ind)))
+(defn mutation
+  ([] (let [freq *mutation-frequency*
+            rate *mutation-bit-rate*]
+        (map (fn [ind]
+               (let [genome @ind
+                     limit (* freq (alength genome))
+                     bits (* 8 (alength genome))
+                     step (/ freq rate bits)]
+                 (loop [o (rand)]
+                   (when (<= o limit)
+                     (let [f (rand-int bits)
+                           b (bit-and 7 f)
+                           f (bit-shift-right f 3)
+                           b (bit-shift-left 1 b)]
+                       (aset-byte genome f (bit-xor (aget genome f) (to-byte b))))
+                     (recur (+ o step)))))
+               ind)))))
 
 (comment
   into (sorted-map)
@@ -245,52 +251,56 @@
               *mutation-bit-rate* 0.001]
       (frequencies
         (transduce
-          (comp mutation
+          (comp (mutation)
                 (map (fn [g] (apply + (flatten (map #(byte-test %) @g))))))
           conj
           (repeatedly pop-size #(*make-container* (byte-array (repeat genome-length 0)))))))))
 
-(def fertilization
-  (comp
-    (partition-all *parent-count*)
-    (map #(*make-container*
-            (byte-array (apply mapcat (fn [& a] a) (map deref %)))
-            :parents %
-            :generation (->>
-                          % (map (comp :generation meta))
-                          (filter (comp not nil?))
-                          (apply max 0)
-                          inc)))))
+(defn fertilization
+  ([] (let [n *parent-count*]
+        (comp
+          (partition-all n)
+          (map #(*make-container*
+                  (byte-array (apply mapcat (fn [& a] a) (map deref %)))
+                  :parents %
+                  :generation (->>
+                                % (map (comp :generation meta))
+                                (filter (comp not nil?))
+                                (apply max 0)
+                                inc)))))))
 
 (comment
   let [population  (map #(*make-container* (byte-array (repeat 10 %))) (range 10 100))]
-  (transduce fertilization conj population))
+  (transduce (fertilization) conj population))
 
-(def ticketed-fertilization
-  (comp
-    (partition-all *parent-count*)
-    (map #(*make-container*
-            (byte-array (apply mapcat (fn [& a] a) (map deref %)))
-            :parents %
-            :generation (->>
-                          % (map (comp :generation meta))
-                          (filter (comp not nil?))
-                          (apply max 0)
-                          inc)
-            :ticket-count (apply + (map (comp :ticket-count meta) %))))))
+(defn ticketed-fertilization
+  ([] (let [n *parent-count*]
+        (comp
+          (partition-all n)
+          (map #(*make-container*
+                  (byte-array (apply mapcat (fn [& a] a) (map deref %)))
+                  :parents %
+                  :generation (->>
+                                % (map (comp :generation meta))
+                                (filter (comp not nil?))
+                                (apply max 0)
+                                inc)
+                  :ticket-count (apply + (map (comp :ticket-count meta) %))))))))
 
 (defn- rand-bytes [size] (byte-array (repeatedly size #(-> 0xFF rand-int (- 0x80) byte))))
 
 (deftest encode-rand
   (loop [n 9]
-    (let [b (decode n (rand-bytes 2520))]
-      (when (> n 0) (is (= b (decode n (encode n b))))))))
+    (binding [*parent-count* n]
+      (let [b (decode (rand-bytes 2520))]
+        (when (> n 0) (is (= b (decode (encode b)))))))))
 
 (defn- test-decode
   ([] (test-decode 1))
   ([n] (test-decode n identity))
   ([n f]
-   (is (= (decode n (map f (encode n (range 0x100)))) (range 0x100)))))
+   (binding [*parent-count* n]
+     (is (= (decode (map f (encode (range 0x100)))) (range 0x100))))))
 
 (deftest decode-total
   (loop [n 10]
@@ -308,7 +318,8 @@
       (recur (inc i)))))
 
 (deftest dominance
-  (is (= (decode 2 [0 0 -46 85, ;; both dominate
+  (binding [*parent-count* 2]
+    (is (= (decode [0 0 -46 85, ;; both dominate
                     0 0 -46 69, ;; 1 dominate
                     0 0 -46 68, ;; 1 dominate
                     0 0  82 85, ;; 2 dominate
@@ -317,4 +328,4 @@
                     0 0  83 85, ;; 2 dominate
                     0 0  83 69, ;; 2 major recessive
                     0 0  83 68]);; both (minor) recessive
-         [3 1 1 2 3 1 2 2 3])))
+           [3 1 1 2 3 1 2 2 3]))))

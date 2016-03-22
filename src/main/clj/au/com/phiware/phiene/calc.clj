@@ -41,14 +41,15 @@
               :step (inc (:step i))}))))
 
 (defn compete
-  ([target] (fn [contestants]
-              (sort-by
-                (comp
-                  (juxt :step
-                        (comp #(if % (abs (- target %)) Double/POSITIVE_INFINITY) first :stack)
-                        (comp count :stack))
-                  (partial calculate target)
-                  (decode)
-                  deref)
-                contestants)))
+  ([target] (let [n *parent-count*]
+              (fn [contestants]
+                (sort-by
+                  (comp
+                    (juxt :step
+                          (comp #(if % (abs (- target %)) Double/POSITIVE_INFINITY) first :stack)
+                          (comp count :stack))
+                    (partial calculate target)
+                    (decode n)
+                    deref)
+                  contestants))))
   ([target contestants] ((compete target) contestants)))
