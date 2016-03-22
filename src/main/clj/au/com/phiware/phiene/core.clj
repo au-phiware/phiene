@@ -18,7 +18,7 @@
   (fn
     ([] (*make-container* []))
     ([ind] ind)
-    ([ind x] (*make-container* (conj @ind x) (meta ind)))))
+    ([ind x] (*make-container* (conj (deref ind) x) (meta ind)))))
 
 (defn- tap
   ([xf fmt f] (comp (map (fn [x] (printf fmt (f x)) x)) xf))
@@ -122,11 +122,10 @@
            reverse)))
 
 (defn encode
-  ([]   (let [n *parent-count*]
-           (fn [c] (transduce (mapcat #(encode-byte n %)) conj c))))
-  ([c] ((encode) c)))
+  ([n] (fn [c] (transduce (mapcat #(encode-byte n %)) conj c)))
+  ([n c] ((encode n) c)))
 
-(comment into-array Byte/TYPE (encode c))
+(comment into-array Byte/TYPE (encode *parent-count* c))
 
 (def H [0x1, 0xF, 0x7, 0xB, 0x3, 0xD, 0x5, 0x9])
 (def revH [1 1, 0 0x10, 0 0x40, 0 4, 0 0x80, 0 8, 0 0x20, 0 2])
@@ -152,21 +151,20 @@
               b)))))
 
 (defn decode
-  ([] (let [n *parent-count*]
-        (fn [ind]
-          (transduce
-            (comp
-              (partition-all n)
-              (map decode-nibble)
-              (partition-all 2)
-              (map (fn [[high low]]
-                     (if (= low nil) (recur [0 high])
-                       (bit-or (bit-shift-left high 4) low)))))
-            conj
-            ind))))
-  ([ind] ((decode) ind)))
+  ([n] (fn [ind]
+        (transduce
+          (comp
+            (partition-all n)
+            (map decode-nibble)
+            (partition-all 2)
+            (map (fn [[high low]]
+                   (if (= low nil) (recur [0 high])
+                     (bit-or (bit-shift-left high 4) low)))))
+          conj
+          ind)))
+  ([n ind] ((decode n) ind)))
 
-(comment map (binding [*parent-count* 1] (fn [n] (map #(-> % (bit-xor (second (encode [n]))) cardinality) (filter #(= (decode [0 %]) [n]) (map to-byte (range 0x100)))))) (range 0x10))
+(comment map (fn [n] (map #(-> % (bit-xor (second (encode 1 [n]))) cardinality) (filter #(= (decode 1 [0 %]) [n]) (map to-byte (range 0x100))))) (range 0x10))
 
 (defn tournament
   ([compete]
@@ -190,7 +188,7 @@
   ([n freq ind m]
    (->
      (map #(nth %1 (mod %2 (count %1)))
-          (partition-all n (seq @ind))
+          (partition-all n (-> ind deref seq))
           (iterate (fn [b]
                      (if (< (rand) freq)
                        (mod (+ 1 b (rand-int  (dec n))) n)
@@ -221,7 +219,7 @@
   ([] (let [freq *mutation-frequency*
             rate *mutation-bit-rate*]
         (map (fn [ind]
-               (let [genome @ind
+               (let [genome (deref ind)
                      limit (* freq (alength genome))
                      bits (* 8 (alength genome))
                      step (/ freq rate bits)]
@@ -252,7 +250,7 @@
       (frequencies
         (transduce
           (comp (mutation)
-                (map (fn [g] (apply + (flatten (map #(byte-test %) @g))))))
+                (map (fn [g] (apply + (flatten (map #(byte-test %) (deref g)))))))
           conj
           (repeatedly pop-size #(*make-container* (byte-array (repeat genome-length 0)))))))))
 
@@ -291,16 +289,14 @@
 
 (deftest encode-rand
   (loop [n 9]
-    (binding [*parent-count* n]
-      (let [b (decode (rand-bytes 2520))]
-        (when (> n 0) (is (= b (decode (encode b)))))))))
+    (let [b (decode n (rand-bytes 2520))]
+      (when (> n 0) (is (= b (decode n (encode n b))))))))
 
 (defn- test-decode
   ([] (test-decode 1))
   ([n] (test-decode n identity))
   ([n f]
-   (binding [*parent-count* n]
-     (is (= (decode (map f (encode (range 0x100)))) (range 0x100))))))
+   (is (= (decode n (map f (encode n (range 0x100)))) (range 0x100)))))
 
 (deftest decode-total
   (loop [n 10]
@@ -318,8 +314,7 @@
       (recur (inc i)))))
 
 (deftest dominance
-  (binding [*parent-count* 2]
-    (is (= (decode [0 0 -46 85, ;; both dominate
+  (is (= (decode 2 [0 0 -46 85, ;; both dominate
                     0 0 -46 69, ;; 1 dominate
                     0 0 -46 68, ;; 1 dominate
                     0 0  82 85, ;; 2 dominate
@@ -328,4 +323,4 @@
                     0 0  83 85, ;; 2 dominate
                     0 0  83 69, ;; 2 major recessive
                     0 0  83 68]);; both (minor) recessive
-           [3 1 1 2 3 1 2 2 3]))))
+         [3 1 1 2 3 1 2 2 3])))
