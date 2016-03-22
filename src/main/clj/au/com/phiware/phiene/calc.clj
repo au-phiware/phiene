@@ -19,7 +19,7 @@
    (fn [stack] (if (> (count stack) 0) (cons (first stack) stack) stack))
    (fn [stack] (if (and (>= (count stack) 2) (not (== (second stack) 0))) (cons (apply mod (take 2 stack)) (drop 2 stack)) stack))
    (fn [stack] (pull 1 stack bit-not))
-   (fn [stack] (if (>= (count stack) 1) (cons (.longValue (- 0N (first stack))) (rest stack)) stack))
+   (fn [stack] (if (>= (count stack) 1) (cons (.longValue (- 0N (bigint (first stack)))) (rest stack)) stack))
    (fn [stack] (if (>= (count stack) 2) (cons (.longValue (- (first stack) (bigint (second stack)))) (drop 2 stack)) stack))
    (fn [stack] (if (>= (count stack) 2) (cons (.longValue (* (first stack) (bigint (second stack)))) (drop 2 stack)) stack))
    (fn [stack] (if (>= (count stack) 2) (cons (.longValue (+ (first stack) (bigint (second stack)))) (drop 2 stack)) stack))
