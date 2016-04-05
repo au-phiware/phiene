@@ -1,11 +1,39 @@
 (ns au.com.phiware.phiene.calc
   (:require
     [clojure.math.numeric-tower :refer [abs]]
-    [au.com.phiware.phiene.core :refer :all]))
+    [au.com.phiware.phiene.core :refer :all]
+    [au.com.phiware.phiene.containers :as c :refer [decode]])
+  (:import
+    (clojure.lang IDeref IObj RT Seqable)
+    (java.nio ByteBuffer)
+    (au.com.phiware.phiene ByteBufferGenomeContainer)))
+
+(def ^:private ^:const ByteArray (RT/classForName "[B"))
+(defn make
+  ([n] (make n {}))
+  ([n m] (proxy [ByteBufferGenomeContainer Seqable]
+           [(condp instance? n
+              ByteBufferGenomeContainer (.buffer n)
+              ByteBuffer n
+              ByteArray  (ByteBuffer/wrap n)
+              Number     (ByteBuffer/allocate n))
+            m]
+           (alloc
+             ([n] (make n (meta this)))
+             ([n m] (make n m)))
+           (withMeta [m] (make this m))
+           (seq []
+             (let [buffer (.rewind @this)]
+               (if (.hasRemaining buffer)
+                 (take-while (fn [x] (.hasRemaining buffer))
+                             (repeatedly #(.get buffer)))
+                 (list)))))))
 
 (defmacro pull [argn stack & body]
   (list 'if (list '>= (list 'count stack) argn)
-        (list 'cons (concat (list 'apply) body (list (list 'take argn stack))) (list 'drop argn stack))
+        (list 'cons
+              (concat (list 'apply) body (list (list 'take argn stack)))
+              (list 'drop argn stack))
         stack))
 
 (def ops
@@ -41,15 +69,14 @@
               :step (inc (:step i))}))))
 
 (defn compete
-  ([target] (let [n *parent-count*]
-              (fn [contestants]
-                (sort-by
-                  (comp
-                    (juxt :step
-                          (comp #(if % (abs (- target %)) Double/POSITIVE_INFINITY) first :stack)
-                          (comp count :stack))
-                    (partial calculate target)
-                    (decode n)
-                    deref)
-                  contestants))))
+  ([target]
+   (fn [contestants]
+     (sort-by
+       (comp
+         (juxt :step
+               (comp #(if % (abs (- target %)) Double/POSITIVE_INFINITY) first :stack)
+               (comp count :stack))
+         (partial calculate target)
+         seq)
+       contestants)))
   ([target contestants] ((compete target) contestants)))
