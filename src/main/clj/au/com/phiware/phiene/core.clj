@@ -89,44 +89,49 @@
 (defn tournament
   ([compete]
    (let [n *parent-count*]
-     (comp
-       (partition-all n)
-       (map (comp first compete))))))
+     (with-meta
+       (comp
+        (partition-all n)
+        (map (comp first compete)))
+       {:name "tournament"}))))
 
 (defn ticketed-tournament
   ([compete] (ticketed-tournament compete 1))
   ([compete cost]
    (let [n *parent-count*]
-     (comp
-       (map #(with-meta %
-                   (assoc (meta %)
-                          :ticket-count (-> % meta :ticket-count (- cost)))))
-       (partition-all n)
-       (map compete)
-       (mapcat #(cons (with-meta (first %)
-                            (assoc (-> % first meta)
-                                   :ticket-count (+ (* cost n) (-> % first meta :ticket-count))))
-                      (rest %)))
-       (filter #(not (when (-> % meta :ticket-count (<= 0)) (dealloc %) true)))))))
+     (with-meta
+       (comp
+        (map #(with-meta %
+                         (assoc (meta %)
+                                :ticket-count (-> % meta :ticket-count (or 0) (- cost)))))
+        (partition-all n)
+        (map compete)
+        (mapcat #(cons (with-meta (first %)
+                                  (assoc (-> % first meta)
+                                         :ticket-count (+ (* cost n) (-> % first meta :ticket-count (or 0)))))
+                       (rest %)))
+        (filter #(not (when (-> % meta :ticket-count (or 0) (<= 0)) (dealloc %) true))))
+       {:name "ticketed-tournament"}))))
 
 (defn- crossover
   ([n freq ind m]
-   (-> ind
-     (#(let [cnt (-> % size (/ n))]
-         (loop [gamete (alloc % cnt)
-                i (rand-int n)
-                j 0]
-           (if (< j cnt)
-             (recur (set-at! gamete j (get-at % (+ i (* n j))))
-                    (if (< (rand) freq) (rand-int n) i)
-                    (inc j))
-             gamete))))
-     (with-meta m)))
+   (let [cnt (-> ind size (/ n) int)]
+    (loop [gamete (alloc ind cnt m)
+           j (rand-int n)
+           i 0]
+      (if (< i cnt)
+        (recur (set-at! gamete i (get-at ind (+ j (* n i))))
+               (if (< (rand) freq) (rand-int n) j)
+               (inc i))
+        gamete))))
   ([n freq ind] (crossover n freq ind (meta ind))))
 
 (defn meiosis
   ([] (let [n *parent-count*
-            f *crossover-frequency*] (map (partial crossover n f)))))
+            f *crossover-frequency*]
+        (with-meta
+          (map (partial crossover n f))
+          {:name "meiosis"}))))
 
 (comment
   ;; Regardless of the *crossover-frequency* the result should be about 500
@@ -137,26 +142,30 @@
 (defn ticketed-meiosis
   ([] (let [n *parent-count*
             f *crossover-frequency*]
-        (mapcat (fn [ind]
-                  (repeatedly (max (:ticket-count (meta ind)) 1)
-                              #(crossover n f ind (assoc (meta ind) :ticket-count 1))))))))
+        (with-meta
+          (mapcat (fn [ind]
+                   (repeatedly (max (or (:ticket-count (meta ind)) 1) 1)
+                               #(crossover n f ind (assoc (meta ind) :ticket-count 1)))))
+          {:name "ticketed-meiosis"}))))
 
 (defn mutation
   ([] (let [freq *mutation-frequency*
             rate *mutation-bit-rate*]
-        (map (fn [ind]
-               (let [limit (* freq (size ind))
-                     bits (* 8 (size ind))
-                     step (/ freq rate bits)]
-                 (loop [o (rand)]
-                   (when (<= o limit)
-                     (let [f (rand-int bits)
-                           b (bit-and 7 f)
-                           f (bit-shift-right f 3)
-                           b (bit-shift-left 1 b)]
-                       (set-at! ind f (bit-xor (get-at ind f) (to-byte b))))
-                     (recur (+ o step)))))
-               ind)))))
+        (with-meta
+          (map (fn [ind]
+                (let [limit (* freq (size ind))
+                      bits (* 8 (size ind))
+                      step (/ freq rate bits)]
+                  (loop [o (rand)]
+                    (when (<= o limit)
+                      (let [f (rand-int bits)
+                            b (bit-and 7 f)
+                            f (bit-shift-right f 3)
+                            b (bit-shift-left 1 b)]
+                        (set-at! ind f (bit-xor (get-at ind f) (to-byte b))))
+                      (recur (+ o step)))))
+                ind))
+          {:name "mutation"}))))
 
 (comment
   into (sorted-map)
@@ -181,28 +190,31 @@
 
 (defn fertilization
   ([] (let [n *parent-count*]
-        (comp
-          (partition-all n)
-          (map #(with-meta
-                  (let [cnt (-> % first size)]
-                    (loop [genome (alloc (first %) (* cnt n))
-                           i 0]
-                     (if (< i cnt)
-                       (recur (loop
-                                [genome genome
-                                 j 0]
-                                (if (< j n)
-                                  (recur (set-at! genome (+ (* i n) j) (get-at (nth % j) i))
-                                         (inc j))
-                                  genome))
-                              (inc i))
-                       genome)))
-                  :parents %
-                  :generation (->> %
-                                (map (comp :generation meta))
-                                (filter (comp not nil?))
-                                (apply max 0)
-                                inc)))))))
+        (with-meta
+         (comp
+           (partition-all n)
+           (filter #(-> % count (= n)))
+           (map #(with-meta
+                   (let [cnt (-> % first size)]
+                     (loop [genome (alloc (first %) (* cnt n))
+                            i 0]
+                       (if (< i cnt)
+                         (recur (loop
+                                  [genome genome
+                                   j 0]
+                                  (if (< j n)
+                                    (recur (set-at! genome (+ j (* n i)) (get-at (nth % j) i))
+                                           (inc j))
+                                    genome))
+                                (inc i))
+                         genome)))
+                   {:parents %
+                    :generation (->> %
+                                     (map (comp :generation meta))
+                                     (filter (comp not nil?))
+                                     (apply max 0)
+                                     inc)})))
+         {:name "fertilization"}))))
 
 (comment
   let [population  (map #(*make-container* (byte-array (repeat 10 %))) (range 10 100))]
@@ -210,27 +222,29 @@
 
 (defn ticketed-fertilization
   ([] (let [n *parent-count*]
-        (comp
-          (partition-all n)
-          (filter #(-> % count (= n)))
-          (map #(with-meta
-                  (let [cnt (-> % first size)]
-                    (loop [genome (alloc (first %) (* cnt n))
-                           i 0]
-                     (if (< i cnt)
-                       (recur (loop
-                                [genome genome
-                                 j 0]
-                                (if (< j n)
-                                  (recur (set-at! genome (+ (* i n) j) (get-at (nth % j) i))
-                                         (inc j))
-                                  genome))
-                              (inc i))
-                       genome)))
-                  {:parents %
-                   :generation (->>
-                                 % (map (comp :generation meta))
-                                 (filter (comp not nil?))
-                                 (apply max 0)
-                                 inc)
-                   :ticket-count (apply + (map (comp :ticket-count meta) %))}))))))
+        (with-meta
+          (comp
+           (partition-all n)
+           (filter #(-> % count (= n)))
+           (map #(with-meta
+                   (let [cnt (-> % first size)]
+                     (loop [genome (alloc (first %) (* cnt n))
+                            i 0]
+                       (if (< i cnt)
+                         (recur (loop
+                                  [genome genome
+                                   j 0]
+                                  (if (< j n)
+                                    (recur (set-at! genome (+ (* i n) j) (get-at (nth % j) i))
+                                           (inc j))
+                                    genome))
+                                (inc i))
+                         genome)))
+                   {:parents %
+                    :generation (->>
+                                  % (map (comp :generation meta))
+                                  (filter (comp not nil?))
+                                  (apply max 0)
+                                  inc)
+                    :ticket-count (apply + (map (comp (fn [n] (or n 0)) :ticket-count meta) %))})))
+          {:name "ticketed-fertilization"}))))
