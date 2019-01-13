@@ -3,6 +3,9 @@
     [clojure.core.async :as async :refer [chan close! >!! >! <! go go-loop]]
     [au.com.phiware.phiene.containers :refer :all]))
 
+(def ^:dynamic *interceptor* (fn [xform] nil))
+(def ^:dynamic *ex-handler* (fn [xform] nil))
+
 (defprotocol GenomeContainer
   (alloc [g] [g size] [g size m])
   (dealloc [g])
@@ -71,7 +74,8 @@
                (if (fn? buf)
                  (recur from (concat [n buf xform] xforms))
                  (if xform
-                   (let [to (chan buf)]
+                   (let [incptr (*interceptor* xform)
+                         to (chan buf incptr (*ex-handler* incptr))]
                      (pipeline n to xform from)
                      (recur to xforms))
                    from)))]
