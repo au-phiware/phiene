@@ -10,6 +10,7 @@
    [net.mikera/core.matrix "0.43.0"]
    ;[com.datomic/datomic-free "0.9.5302"]
    [au.com.phiware/util "1.0-SNAPSHOT"]
+   [au.com.phiware/math.bankers "0.1.0-SNAPSHOT"]
    [com.google.guava/guava "14.0"]
    [com.google.code.findbugs/jsr305 "1.3.9"]
    [org.slf4j/slf4j-api "1.7.5"]

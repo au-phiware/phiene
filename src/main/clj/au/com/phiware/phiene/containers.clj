@@ -6,6 +6,7 @@
   (:import (java.nio ByteBuffer)
            (clojure.lang RT))
   (:require
+    [au.com.phiware.math.bankers :refer [to from]]
     [clojure.core.matrix :refer :all]
     [clojure.test :refer :all]))
 
@@ -24,6 +25,7 @@
 (defn- encode-byte
   ([n b] (->>
            b
+           to
            byte-test
            (mul G)
            (partition 4)
@@ -63,7 +65,7 @@
 
 (defn- conj-nibble [[high low]]
   (if (= low nil) (recur [0 high])
-    (bit-or (bit-shift-left high 4) low)))
+    (from (bit-or (bit-shift-left high 4) low))))
 
 (defmethod decode :default
   [n ind]
