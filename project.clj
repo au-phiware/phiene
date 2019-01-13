@@ -4,10 +4,12 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies
-  [[org.clojure/clojure "1.7.0"]
+  [[org.clojure/clojure "1.9.0"]
    [org.clojure/core.async "0.2.371"]
    [org.clojure/math.numeric-tower  "0.0.4"]
+   [org.clojure/tools.cli "0.4.1"]
    [net.mikera/core.matrix "0.43.0"]
+   [iapetos "0.1.8"]
    ;[com.datomic/datomic-free "0.9.5302"]
    [au.com.phiware/util "1.0-SNAPSHOT"]
    [au.com.phiware/math.bankers "0.1.0-SNAPSHOT"]
