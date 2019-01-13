@@ -61,7 +61,7 @@
   subject to the transducers in the xform-clauses, with parallelism n. Where
   the xform-clauses is the transducer itself or optionally preceeded by a
   buffer (or size of a fixed buffer), to which the tranducer will be pipelined
-  into. If not buffer is specified the transducer will pipelined into a fixed
+  into. If no buffer is specified the transducer will be pipelined into a fixed
   sized buffer equal to n.
   Once a container has been pipelined through the tranducers it will be put on
   the from channel again; to monitor the individuals in the population consider

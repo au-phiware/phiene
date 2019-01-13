@@ -19,9 +19,9 @@
   :source-paths ["src/main/clj"]
   :java-source-paths ["src/main/java"]
   :prep-tasks [["compile" "au.com.phiware.phiene.core"] ["compile" "au.com.phiware.phiene.containers"] "javac" "compile"]
-  :main au.com.phiware.phiene.core
+  :main au.com.phiware.phiene.demo
   :target-path "target/%s"
-  :jvm-opts  ["-Xms768m"  "-Xmx1024m"]
+  :jvm-opts  ["-Xms768m"  "-Xmx2048m"]
   :profiles {:uberjar {:aot :all}
              :provided {:dependencies [[org.apache.hadoop/hadoop-core "1.2.1"]]}}
   :datomic  {:schemas  ["resources"  ["schema.edn"]]})
