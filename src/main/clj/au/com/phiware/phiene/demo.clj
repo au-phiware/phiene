@@ -1,20 +1,49 @@
 (ns au.com.phiware.phiene.demo
   (:require
-    [clojure.core.async :refer [chan close! onto-chan put!]]
+    [clojure.core.async :refer [buffer chan close! onto-chan put!]]
     [clojure.string :as string]
     [clojure.tools.cli :refer [parse-opts]]
     [iapetos.core :as prometheus]
     [iapetos.standalone :as standalone]
     [au.com.phiware.phiene.core :refer :all]
     [au.com.phiware.phiene.containers :refer [*parent-count*]]
-    [au.com.phiware.phiene.calc :refer :all]))
+    [au.com.phiware.phiene.calc :refer :all])
+  (:import [java.util Arrays]
+           [io.prometheus.client Collector GaugeMetricFamily]))
 
 (defn- rand-bytes [size] (byte-array (repeatedly size #(-> 0xFF rand-int (- 0x80) byte))))
 
 (defn- summary [x] (assoc (meta x) :parents (-> x meta :parents count)))
 
+(defonce instrumented-buffers
+  {"to" (buffer 400)
+   "from" (buffer 200)
+   "ticketed-meiosis" (buffer 10)
+   "mutation" (buffer 10)
+   "ticketed-fertilization" (buffer 10)
+   "ticketed-tournament" (buffer 50)})
+
+(defn initialize-buffer-instrumentation [registry]
+  (prometheus/register
+    registry
+    (proxy [Collector] []
+      (collect []
+        (->> instrumented-buffers
+             (reduce
+               (fn [samples [^String label buf]]
+                 (.addMetric samples
+                             (Arrays/asList (into-array String [label]))
+                             (count buf)))
+               (GaugeMetricFamily.
+                 "demo_buffer_size" "a channel's buffer size"
+                 (Arrays/asList (into-array String ["name"]))))
+             (vector)
+             (into-array GaugeMetricFamily)
+             Arrays/asList)))))
+
 (defonce registry
   (-> (prometheus/collector-registry)
+      (initialize-buffer-instrumentation)
       (prometheus/register
         (prometheus/counter :demo/tx_total {:description "transformations"
                                             :labels [:name]}))))
@@ -36,8 +65,8 @@
                 :genome-length (size v)))
             v))))
 
-(def to   (chan 400))
-(def from (chan 200
+(def to   (chan (instrumented-buffers "to")))
+(def from (chan (instrumented-buffers "from")
                 (map
                   (fn [v]
                     (when (= target (->> v seq (calculate target) :stack first))
@@ -75,10 +104,14 @@
                   *interceptor* #(let [counter (registry :demo/tx_total (select-keys (meta %) [:name]))]
                                    (comp % (map (fn [v] (prometheus/inc counter) v))))]
           (evolve to 6 from
-                  10 (ticketed-meiosis)
-                  10 (mutation)
-                  10 (ticketed-fertilization)
-                  10 (ticketed-tournament (compete target))))
+                  (instrumented-buffers "ticketed-meiosis")
+                  (ticketed-meiosis)
+                  (instrumented-buffers "mutation")
+                  (mutation)
+                  (instrumented-buffers "ticketed-fertilization")
+                  (ticketed-fertilization)
+                  (instrumented-buffers "ticketed-tournament")
+                  (ticketed-tournament (compete target))))
 
         (read-line)
         (close! from)))))
