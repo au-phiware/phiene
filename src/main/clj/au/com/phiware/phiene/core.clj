@@ -3,7 +3,7 @@
     [clojure.core.async :as async :refer [chan close! >!! >! <! go go-loop]]
     [au.com.phiware.phiene.containers :refer :all]))
 
-(def ^:dynamic *interceptor* (fn [xform] nil))
+(def ^:dynamic *interceptor* identity)
 (def ^:dynamic *ex-handler* (fn [xform] nil))
 
 (defprotocol GenomeContainer
