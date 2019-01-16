@@ -58,11 +58,11 @@
 
 (defn evolve
   "Takes genetic containers from the from channel and continously evolves them
-  subject to the transducers in the xform-clauses, with parallelism n. Where
-  the xform-clauses is the transducer itself or optionally preceeded by a
+  subject to the transducers in the xform-clauses, with parallelism n.  Where
+  the xform-clauses is the transducer itself and optionally followed by a
   buffer (or size of a fixed buffer), to which the tranducer will be pipelined
-  into. If no buffer is specified the transducer will be pipelined into a fixed
-  sized buffer equal to n.
+  into.  If no buffer is specified the transducer will be pipelined into a
+  fixed sized buffer equal to n.
   Once a container has been pipelined through the tranducers it will be put on
   the from channel again; to monitor the individuals in the population consider
   using a from channel that has a transducer.
@@ -70,9 +70,9 @@
   containers are then placed on the to channel, and the to channel is closed."
   [to n from & xform-clauses]
   (let [popn (loop [from from
-                    [buf xform & xforms] xform-clauses]
-               (if (fn? buf)
-                 (recur from (concat [n buf xform] xforms))
+                    [xform buf & xforms] xform-clauses]
+               (if (or (not buf) (fn? buf))
+                 (recur from (concat [xform n buf] xforms))
                  (if xform
                    (let [incptr (*interceptor* xform)
                          to (chan buf incptr (*ex-handler* incptr))]

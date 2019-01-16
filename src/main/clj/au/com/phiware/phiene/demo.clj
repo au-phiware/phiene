@@ -105,14 +105,14 @@
                   *interceptor* #(let [counter (registry :demo/tx_total (select-keys (meta %) [:name]))]
                                    (comp % (map (fn [v] (prometheus/inc counter) v))))]
           (evolve to 6 from
-                  (instrumented-buffers "ticketed-meiosis")
                   (ticketed-meiosis)
-                  (instrumented-buffers "mutation")
+                  (instrumented-buffers "ticketed-meiosis")
                   (mutation)
-                  (instrumented-buffers "ticketed-fertilization")
+                  (instrumented-buffers "mutation")
                   (ticketed-fertilization)
-                  (instrumented-buffers "ticketed-tournament")
-                  (ticketed-tournament (compete target))))
+                  (instrumented-buffers "ticketed-fertilization")
+                  (ticketed-tournament (compete target))
+                  (instrumented-buffers "ticketed-tournament")))
 
         (read-line)
         (close! from)))))
