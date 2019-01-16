@@ -36,8 +36,8 @@
                              (Arrays/asList (into-array String [label]))
                              (count buf)))
                (GaugeMetricFamily.
-                 "demo_buffer_size" "a channel's buffer size"
-                 (Arrays/asList (into-array String ["name"]))))
+                 "demo_buf_size" "buffer size (typically used for channels)"
+                 (Arrays/asList (into-array String ["buf"]))))
              (vector)
              (into-array GaugeMetricFamily)
              Arrays/asList)))))
@@ -46,8 +46,10 @@
   (-> (prometheus/collector-registry)
       (initialize-buffer-instrumentation)
       (prometheus/register
-        (prometheus/counter :demo/tx_total {:description "transformations"
-                                            :labels [:name]}))))
+        (prometheus/counter
+          :demo/chan_put_total
+          {:description "channel throughput as measured by its transducer"
+                                            :labels [:chan]}))))
 
 (def contestants (repeatedly 100 #(-> 60 rand-bytes (make {:ticket-count 4}))))
 
@@ -68,17 +70,19 @@
 
 (def to   (chan (instrumented-buffers "to")))
 (def from (chan (instrumented-buffers "from")
-                (map
-                  (fn [v]
-                    (when (= target (->> v seq (calculate target) :stack first))
-                      (prn
-                        (assoc
-                          (merge
-                            (calculate target
-                                       (seq v))
-                            (summary v))
-                          :genome-length (size v))))
-                    v))))
+                (let [counter (registry :demo/chan_put_total {:chan "population"})]
+                  (map
+                    (fn [v]
+                      (prometheus/inc counter)
+                      (when (= target (->> v seq (calculate target) :stack first))
+                        (prn
+                          (assoc
+                            (merge
+                              (calculate target
+                                         (seq v))
+                              (summary v))
+                            :genome-length (size v))))
+                      v)))))
 
 (defn -main [& args]
   (let [{:keys [options arguments errors summary]}
@@ -102,7 +106,7 @@
         (onto-chan from contestants false)
 
         (binding [*parent-count* 3
-                  *interceptor* #(let [counter (registry :demo/tx_total (select-keys (meta %) [:name]))]
+                  *interceptor* #(let [counter (registry :demo/chan_put_total {:chan (:name (meta %))})]
                                    (comp % (map (fn [v] (prometheus/inc counter) v))))]
           (evolve to 6 from
                   (ticketed-meiosis)
@@ -115,4 +119,6 @@
                   (instrumented-buffers "ticketed-tournament")))
 
         (read-line)
-        (close! from)))))
+        (close! from)
+        (println "Press Enter to exit.")
+        (read-line)))))
