@@ -4,7 +4,8 @@
     [clojure.string :as string]
     [clojure.tools.cli :refer [parse-opts]]
     [iapetos.core :as prometheus]
-    [iapetos.standalone :as standalone]
+    [iapetos.standalone :as prom-standalone]
+    [iapetos.registry :as prom-registry]
     [au.com.phiware.phiene.core :refer :all]
     [au.com.phiware.phiene.containers :refer [*parent-count*]]
     [au.com.phiware.phiene.calc :refer :all])
@@ -93,7 +94,7 @@
       (:help options) (do (println summary) (System/exit 0))
       errors (do (println (string/join \newline errors)) (System/exit 1))
       :else
-      (with-open [httpd (standalone/metrics-server registry (select-keys options [:port]))]
+      (with-open [httpd (prom-standalone/metrics-server registry (select-keys options [:port]))]
         (println (str "Serving metrics at http://localhost:" (:port options) "/metrics"))
         (println "Press Enter to continue.")
         (read-line)

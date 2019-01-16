@@ -188,6 +188,21 @@
           conj
           (repeatedly pop-size #(*make-container* (byte-array (repeat genome-length 0)))))))))
 
+(defn- fertilize [n gametes]
+  (let [cnt (-> gametes first size)]
+    (loop [genome (alloc (first gametes) (* cnt n))
+           i 0]
+      (if (< i cnt)
+        (recur (loop
+                 [genome genome
+                  j 0]
+                 (if (< j n)
+                   (recur (set-at! genome (+ j (* n i)) (get-at (nth gametes j) i))
+                          (inc j))
+                   genome))
+               (inc i))
+        genome))))
+
 (defn fertilization
   ([] (let [n *parent-count*]
         (with-meta
@@ -195,19 +210,7 @@
            (partition-all n)
            (filter #(-> % count (= n)))
            (map #(with-meta
-                   (let [cnt (-> % first size)]
-                     (loop [genome (alloc (first %) (* cnt n))
-                            i 0]
-                       (if (< i cnt)
-                         (recur (loop
-                                  [genome genome
-                                   j 0]
-                                  (if (< j n)
-                                    (recur (set-at! genome (+ j (* n i)) (get-at (nth % j) i))
-                                           (inc j))
-                                    genome))
-                                (inc i))
-                         genome)))
+                   (fertilize n %)
                    {:parents %
                     :generation (->> %
                                      (map (comp :generation meta))
@@ -227,19 +230,7 @@
            (partition-all n)
            (filter #(-> % count (= n)))
            (map #(with-meta
-                   (let [cnt (-> % first size)]
-                     (loop [genome (alloc (first %) (* cnt n))
-                            i 0]
-                       (if (< i cnt)
-                         (recur (loop
-                                  [genome genome
-                                   j 0]
-                                  (if (< j n)
-                                    (recur (set-at! genome (+ (* i n) j) (get-at (nth % j) i))
-                                           (inc j))
-                                    genome))
-                                (inc i))
-                         genome)))
+                   (fertilize n %)
                    {:parents %
                     :generation (->>
                                   % (map (comp :generation meta))
