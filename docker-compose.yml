@@ -1,0 +1,14 @@
+prometheus:
+  image: prom/prometheus
+  volumes:
+    - ./resources/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+  net: host
+
+grafana:
+  image: grafana/grafana
+  environment:
+    - GF_INSTALL_PLUGINS=jdbranham-diagram-panel
+  volumes:
+    - ./resources/grafana/provisioning:/etc/grafana/provisioning
+    - ./resources/grafana/dashboards:/var/lib/grafana/dashboards
+  net: host

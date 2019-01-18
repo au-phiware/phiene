@@ -1,0 +1,745 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": 2,
+  "links": [],
+  "panels": [
+    {
+      "colors": [
+        "#3f6833",
+        "#1f78c1"
+      ],
+      "composites": [],
+      "content": "graph LR\ntx_meiosis -->|\"#meiosis\"| tx_mutation((mutation))\ntx_mutation-->|\"#mutation\"| tx_fertilization((fertilization))\ntx_fertilization -->|\"#fertilization\"| tx_tournament((tournament))\ntx_tournament -->|\"#tournament\"| population\npopulation[start] --> tx_meiosis((meiosis))\npopulation --> to[end]",
+      "datasource": "Prometheus",
+      "decimals": 0,
+      "format": "none",
+      "graphId": "diagram_2",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 2,
+      "init": {
+        "arrowMarkerAbsolute": true,
+        "cloneCssStyles": false,
+        "flowchart": {
+          "htmlLabels": true,
+          "useMaxWidth": true
+        },
+        "gantt": {
+          "barGap": 4,
+          "barHeight": 20,
+          "fontFamily": "\"Open-Sans\", \"sans-serif\"",
+          "fontSize": 11,
+          "gridLineStartPadding": 35,
+          "leftPadding": 75,
+          "numberSectionStyles": 3,
+          "titleTopMargin": 25,
+          "topPadding": 50
+        },
+        "logLevel": 3,
+        "sequenceDiagram": {
+          "actorMargin": 50,
+          "bottomMarginAdj": 1,
+          "boxMargin": 10,
+          "boxTextMargin": 5,
+          "diagramMarginX": 50,
+          "diagramMarginY": 10,
+          "height": 65,
+          "messageMargin": 35,
+          "mirrorActors": true,
+          "noteMargin": 10,
+          "useMaxWidth": true,
+          "width": 150
+        },
+        "startOnLoad": false
+      },
+      "legend": {
+        "avg": false,
+        "current": true,
+        "gradient": {
+          "enabled": true,
+          "show": true
+        },
+        "max": true,
+        "min": true,
+        "show": false,
+        "total": true
+      },
+      "links": [],
+      "mappingType": 1,
+      "maxDataPoints": 100,
+      "maxWidth": false,
+      "mermaidServiceUrl": "",
+      "metricCharacterReplacements": [
+        {
+          "replaceWithText": "",
+          "replacementPattern": "ticketed-"
+        }
+      ],
+      "mode": "content",
+      "nullPointMode": "connected",
+      "seriesOverrides": [
+        {
+          "alias": "min_.*",
+          "valueName": "min"
+        },
+        {
+          "alias": "max_.*",
+          "valueName": "max"
+        },
+        {
+          "alias": "current_.*",
+          "valueName": "current"
+        },
+        {
+          "alias": "tx_.*",
+          "thresholds": "0,2000",
+          "unitFormat": "ops"
+        }
+      ],
+      "targets": [
+        {
+          "expr": "increase(demo_chan_put_total[$span])",
+          "format": "time_series",
+          "instant": true,
+          "interval": "0.1s",
+          "intervalFactor": 1,
+          "legendFormat": "tx_{{chan}}",
+          "refId": "D"
+        },
+        {
+          "expr": "sum(demo_buf_size) by (buf)",
+          "format": "time_series",
+          "instant": false,
+          "interval": "0.1s",
+          "intervalFactor": 1,
+          "legendFormat": "max_{{buf}}",
+          "refId": "B"
+        },
+        {
+          "expr": "sum(demo_buf_size) by (buf)",
+          "format": "time_series",
+          "instant": false,
+          "interval": "0.1s",
+          "intervalFactor": 1,
+          "legendFormat": "min_{{buf}}",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(demo_buf_size) by (buf)",
+          "format": "time_series",
+          "instant": false,
+          "interval": "0.1s",
+          "intervalFactor": 1,
+          "legendFormat": "{{buf}}",
+          "refId": "E"
+        }
+      ],
+      "thresholds": "0,50",
+      "title": "Population",
+      "transparent": true,
+      "type": "jdbranham-diagram-panel",
+      "valueMaps": [
+        {
+          "op": "=",
+          "text": "N/A",
+          "value": "null"
+        }
+      ],
+      "valueName": "current",
+      "valueOptions": [
+        "avg",
+        "min",
+        "max",
+        "total",
+        "current"
+      ]
+    },
+    {
+      "cards": {
+        "cardPadding": 0,
+        "cardRound": 0
+      },
+      "color": {
+        "cardColor": "#b4ff00",
+        "colorScale": "sqrt",
+        "colorScheme": "interpolateCool",
+        "exponent": 0.5,
+        "mode": "spectrum"
+      },
+      "dataFormat": "tsbuckets",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 5
+      },
+      "heatmap": {},
+      "highlightCards": true,
+      "id": 10,
+      "legend": {
+        "show": true
+      },
+      "links": [],
+      "targets": [
+        {
+          "expr": "sum(increase(demo_ind_step_bucket{chan=\"population\",winner=~\"$winner\",le!=\"+Inf\"}[$span])) by (le)",
+          "format": "heatmap",
+          "intervalFactor": 10,
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Step",
+      "tooltip": {
+        "show": true,
+        "showHistogram": true
+      },
+      "transparent": true,
+      "type": "heatmap",
+      "xAxis": {
+        "show": true
+      },
+      "xBucketNumber": null,
+      "xBucketSize": null,
+      "yAxis": {
+        "decimals": 0,
+        "format": "short",
+        "logBase": 1,
+        "max": null,
+        "min": null,
+        "show": true,
+        "splitFactor": null
+      },
+      "yBucketBound": "auto",
+      "yBucketNumber": null,
+      "yBucketSize": null
+    },
+    {
+      "cards": {
+        "cardPadding": 0,
+        "cardRound": 0
+      },
+      "color": {
+        "cardColor": "#b4ff00",
+        "colorScale": "sqrt",
+        "colorScheme": "interpolateCool",
+        "exponent": 0.5,
+        "mode": "spectrum"
+      },
+      "dataFormat": "tsbuckets",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 5
+      },
+      "heatmap": {},
+      "highlightCards": true,
+      "id": 11,
+      "legend": {
+        "show": true
+      },
+      "links": [],
+      "targets": [
+        {
+          "expr": "sum(increase(demo_ind_ticket_count_bucket{chan=\"population\",winner=~\"$winner\"}[$span])) by (le)",
+          "format": "heatmap",
+          "intervalFactor": 10,
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Ticket Count",
+      "tooltip": {
+        "show": true,
+        "showHistogram": true
+      },
+      "transparent": true,
+      "type": "heatmap",
+      "xAxis": {
+        "show": true
+      },
+      "xBucketNumber": null,
+      "xBucketSize": null,
+      "yAxis": {
+        "decimals": 0,
+        "format": "short",
+        "logBase": 1,
+        "max": null,
+        "min": null,
+        "show": true,
+        "splitFactor": null
+      },
+      "yBucketBound": "auto",
+      "yBucketNumber": null,
+      "yBucketSize": null
+    },
+    {
+      "cards": {
+        "cardPadding": 0,
+        "cardRound": 0
+      },
+      "color": {
+        "cardColor": "#b4ff00",
+        "colorScale": "sqrt",
+        "colorScheme": "interpolateCool",
+        "exponent": 0.5,
+        "mode": "spectrum"
+      },
+      "dataFormat": "tsbuckets",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 14
+      },
+      "heatmap": {},
+      "highlightCards": true,
+      "id": 13,
+      "legend": {
+        "show": true
+      },
+      "links": [],
+      "targets": [
+        {
+          "expr": "sum(increase(demo_ind_stack_len_bucket{chan=\"population\",winner=~\"$winner\",le=~\"-?1?[0-9].0\"}[$span])) by (le)",
+          "format": "heatmap",
+          "intervalFactor": 10,
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Stack Size",
+      "tooltip": {
+        "show": true,
+        "showHistogram": true
+      },
+      "transparent": true,
+      "type": "heatmap",
+      "xAxis": {
+        "show": true
+      },
+      "xBucketNumber": null,
+      "xBucketSize": null,
+      "yAxis": {
+        "decimals": 0,
+        "format": "short",
+        "logBase": 1,
+        "max": null,
+        "min": null,
+        "show": true,
+        "splitFactor": null
+      },
+      "yBucketBound": "auto",
+      "yBucketNumber": null,
+      "yBucketSize": null
+    },
+    {
+      "cards": {
+        "cardPadding": 0,
+        "cardRound": 0
+      },
+      "color": {
+        "cardColor": "#b4ff00",
+        "colorScale": "sqrt",
+        "colorScheme": "interpolateCool",
+        "exponent": 0.5,
+        "mode": "spectrum"
+      },
+      "dataFormat": "tsbuckets",
+      "datasource": "Prometheus",
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 14
+      },
+      "heatmap": {},
+      "highlightCards": true,
+      "id": 12,
+      "legend": {
+        "show": true
+      },
+      "links": [],
+      "targets": [
+        {
+          "expr": "sum(increase(demo_ind_result_bucket{chan=\"population\",winner=~\"$winner\"}[$span])) by (le)",
+          "format": "heatmap",
+          "intervalFactor": 10,
+          "legendFormat": "{{le}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Result",
+      "tooltip": {
+        "show": true,
+        "showHistogram": true
+      },
+      "transparent": true,
+      "type": "heatmap",
+      "xAxis": {
+        "show": true
+      },
+      "xBucketNumber": null,
+      "xBucketSize": null,
+      "yAxis": {
+        "decimals": 0,
+        "format": "short",
+        "logBase": 1,
+        "max": null,
+        "min": null,
+        "show": true,
+        "splitFactor": null
+      },
+      "yBucketBound": "auto",
+      "yBucketNumber": null,
+      "yBucketSize": null
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 23
+      },
+      "id": 4,
+      "legend": {
+        "alignAsTable": true,
+        "avg": true,
+        "current": false,
+        "max": false,
+        "min": false,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "label_replace(increase(demo_chan_put_total[$span]), \"chan\", \"$1\", \"chan\", \"ticketed-(.*)\")",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{chan}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Throughput",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "Prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 12,
+        "y": 23
+      },
+      "id": 6,
+      "legend": {
+        "alignAsTable": true,
+        "avg": false,
+        "current": false,
+        "max": true,
+        "min": true,
+        "rightSide": true,
+        "show": true,
+        "total": false,
+        "values": true
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": true,
+      "targets": [
+        {
+          "expr": "sum(demo_buf_size) by (buf)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "{{buf}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Queue Size",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": false
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 16,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "auto": false,
+        "auto_count": 30,
+        "auto_min": "10s",
+        "current": {
+          "text": "1s",
+          "value": "1s"
+        },
+        "hide": 0,
+        "label": null,
+        "name": "span",
+        "options": [
+          {
+            "selected": true,
+            "text": "1s",
+            "value": "1s"
+          },
+          {
+            "selected": false,
+            "text": "2s",
+            "value": "2s"
+          },
+          {
+            "selected": false,
+            "text": "5s",
+            "value": "5s"
+          },
+          {
+            "selected": false,
+            "text": "10s",
+            "value": "10s"
+          },
+          {
+            "selected": false,
+            "text": "15s",
+            "value": "15s"
+          },
+          {
+            "selected": false,
+            "text": "30s",
+            "value": "30s"
+          },
+          {
+            "selected": false,
+            "text": "1m",
+            "value": "1m"
+          },
+          {
+            "selected": false,
+            "text": "2m",
+            "value": "2m"
+          },
+          {
+            "selected": false,
+            "text": "5m",
+            "value": "5m"
+          },
+          {
+            "selected": false,
+            "text": "10m",
+            "value": "10m"
+          },
+          {
+            "selected": false,
+            "text": "15m",
+            "value": "15m"
+          }
+        ],
+        "query": "1s,2s,5s,10s,15s,30s,1m,2m,5m,10m,15m",
+        "refresh": 2,
+        "skipUrlSync": false,
+        "type": "interval"
+      },
+      {
+        "allValue": "true|false",
+        "current": {
+          "tags": [],
+          "text": "Both",
+          "value": "$__all"
+        },
+        "hide": 0,
+        "includeAll": true,
+        "label": null,
+        "multi": false,
+        "name": "winner",
+        "options": [
+          {
+            "selected": true,
+            "text": "Both",
+            "value": "$__all"
+          },
+          {
+            "selected": false,
+            "text": "true",
+            "value": "true"
+          },
+          {
+            "selected": false,
+            "text": "false",
+            "value": "false"
+          }
+        ],
+        "query": "true,false",
+        "skipUrlSync": false,
+        "type": "custom"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1m",
+    "to": "now"
+  },
+  "timepicker": {
+    "refresh_intervals": [
+      "1s",
+      "2s",
+      "5s",
+      "10s",
+      "15s",
+      "30s",
+      "1m",
+      "2m",
+      "5m",
+      "10m",
+      "15m"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
+  },
+  "timezone": "",
+  "title": "Population",
+  "uid": "JHByOhQik",
+  "version": 3
+}
