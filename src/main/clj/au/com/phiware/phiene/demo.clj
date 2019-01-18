@@ -46,43 +46,68 @@
   (-> (prometheus/collector-registry)
       (initialize-buffer-instrumentation)
       (prometheus/register
+        (prometheus/histogram
+          :demo/ind-ticket-count
+          {:description "number of tickets held by an individual"
+           :labels [:chan :winner]
+           :buckets [0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0
+                     11.0 12.0 13.0 14.0 15.0 16.0 17.0 18.0 19.0]})
+        (prometheus/histogram
+          :demo/ind-result
+          {:description "the first number of an individual's stack after attempting to calculate the target"
+           :labels [:chan :winner]
+           :buckets [0.0 1.0 2.0 3.0 4.0 5.0 1e1 1e2 1e3]})
+        (prometheus/histogram
+          :demo/ind-stack-len
+          {:description "length of an individual's stack after attempting to calculate the target"
+           :labels [:chan :winner]
+           :buckets [-1.0 0.0 1.0 2.0 3.0 4.0 5.0 6.0 7.0 8.0 9.0 10.0
+                     20.0 30.0 40.0 50.0 60.0 70.0 80.0 90.0 100.0]})
+        (prometheus/histogram
+          :demo/ind-step
+          {:description "number of calculations of an individual after attempting to calculate the target"
+           :labels [:chan :winner]
+           :buckets [ 1.0  2.0   3.0   4.0   5.0  10.0  15.0  20.0  25.0 30.0
+                     60.0 90.0 120.0 150.0 200.0 250.0 300.0 350.0 400.0 500.0]})
         (prometheus/counter
-          :demo/chan_put_total
+          :demo/chan-put-total
           {:description "channel throughput as measured by its transducer"
-                                            :labels [:chan]}))))
+           :labels [:chan :winner]}))))
 
-(def contestants (repeatedly 100 #(-> 60 rand-bytes (make {:ticket-count 4}))))
+(defn observe [metric chan winner value]
+  (prometheus/observe registry metric {:chan chan :winner winner} value))
+
+(def contestants (repeatedly 500 #(-> 60 rand-bytes (make {:ticket-count 4}))))
 
 (def target 5)
 
-(def winners
-  (chan 100
-        (map
-          (fn [v]
-            (prn
-              (assoc
-                (merge
-                  (calculate target
-                             (seq v))
-                  (summary v))
-                :genome-length (size v)))
-            v))))
-
 (def to   (chan (instrumented-buffers "to")))
 (def from (chan (instrumented-buffers "from")
-                (let [counter (registry :demo/chan_put_total {:chan "population"})]
-                  (map
-                    (fn [v]
-                      (prometheus/inc counter)
-                      (when (= target (->> v seq (calculate target) :stack first))
+                (map
+                  (fn [v]
+                    (let [ch-name "population"
+                          result (calculate target (seq v))
+                          attempt (->> result :stack first)
+                          winner (= target attempt)]
+                      (prometheus/inc registry :demo/chan-put-total {:chan chan :winner winner})
+                      (observe :demo/ind-ticket-count ch-name winner
+                               (-> v meta :ticket-count))
+                      (observe :demo/ind-stack-len ch-name winner
+                               (if attempt
+                                 (count (:stack result))
+                                 -1.0))
+                      (observe :demo/ind-step ch-name winner
+                               (:step result))
+                      (when attempt
+                        (observe :demo/ind-result ch-name winner attempt))
+                      (when winner
                         (prn
                           (assoc
                             (merge
-                              (calculate target
-                                         (seq v))
+                              result
                               (summary v))
-                            :genome-length (size v))))
-                      v)))))
+                            :genome-length (size v)))))
+                    v))))
 
 (defn -main [& args]
   (let [{:keys [options arguments errors summary]}
@@ -106,7 +131,9 @@
         (onto-chan from contestants false)
 
         (binding [*parent-count* 3
-                  *interceptor* #(let [counter (registry :demo/chan_put_total {:chan (:name (meta %))})]
+                  *ex-handler* #(let [name (:name (meta %))]
+                                  (fn [t] (printf "%s: %s\n" name t)))
+                  *interceptor* #(let [counter (registry :demo/chan-put-total {:chan (:name (meta %)) :winner false})]
                                    (comp % (map (fn [v] (prometheus/inc counter) v))))]
           (evolve to 6 from
                   (ticketed-meiosis)
